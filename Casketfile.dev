@@ -1,0 +1,25 @@
+:5300 {
+  # Proxy WebSocket connections to the relay server
+  proxy /socket.io localhost:3001 {
+    websocket
+    transparent
+  }
+
+  # Proxy API requests to the relay server
+  proxy /api localhost:3001 {
+    transparent
+  }
+
+  # Serve the Vite dev server for everything else
+  proxy / localhost:3000 {
+    websocket
+    transparent
+  }
+
+  # Enable gzip compression
+  gzip
+
+  # Logging
+  log stdout
+  errors stderr
+}

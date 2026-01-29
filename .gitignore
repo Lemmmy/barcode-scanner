@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+build
+public
+coverage
+*.js.map
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+*.swp
+*.swo
+
+# Data
+data
