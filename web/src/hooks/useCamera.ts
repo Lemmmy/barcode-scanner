@@ -11,9 +11,8 @@ export function useCamera({ videoRef, key }: UseCameraOptions) {
   const lastKeyRef = useRef<string | number | null | undefined>(undefined);
 
   useEffect(() => {
-    // Reinitialize if key changes
-    const shouldReinitialize = key !== undefined && key !== lastKeyRef.current;
-    if (!shouldReinitialize && streamRef.current) return;
+    // Skip if we already have a stream and key hasn't changed
+    if (streamRef.current && key === lastKeyRef.current) return;
 
     lastKeyRef.current = key;
 
