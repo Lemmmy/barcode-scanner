@@ -11,14 +11,37 @@ export function useCamera({ videoRef, key }: UseCameraOptions) {
   const lastKeyRef = useRef<string | number | null | undefined>(undefined);
 
   useEffect(() => {
+    console.log(
+      "[useCamera] Effect triggered - key:",
+      key,
+      "lastKey:",
+      lastKeyRef.current,
+      "hasStream:",
+      !!streamRef.current,
+    );
+
     // Skip if we already have a stream and key hasn't changed
-    if (streamRef.current && key === lastKeyRef.current) return;
+    if (streamRef.current && key === lastKeyRef.current) {
+      console.log("[useCamera] Skipping - stream exists and key unchanged");
+      return;
+    }
+
+    // Stop existing stream before requesting new one
+    if (streamRef.current) {
+      console.log("[useCamera] Stopping existing stream before reinit");
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+        console.log("Camera track stopped before reinit:", track.kind);
+      });
+      streamRef.current = null;
+    }
 
     lastKeyRef.current = key;
 
     let mounted = true;
 
     const initCamera = async () => {
+      console.log("[useCamera] Requesting camera access...");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -31,18 +54,23 @@ export function useCamera({ videoRef, key }: UseCameraOptions) {
 
         if (!mounted) {
           // Component unmounted during async operation, clean up immediately
+          console.log("[useCamera] Component unmounted during init, cleaning up");
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
 
+        console.log("[useCamera] Camera access granted, stream obtained");
         streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          console.log("[useCamera] Stream attached to video element");
+        } else {
+          console.warn("[useCamera] Video ref is null, cannot attach stream");
         }
       } catch (error) {
         if (mounted) {
-          console.error("Camera error:", error);
+          console.error("[useCamera] Camera error:", error);
           setCameraError("Failed to access camera. Please grant camera permissions.");
         }
       }
