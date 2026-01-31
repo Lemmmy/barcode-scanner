@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface UseCameraOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -6,29 +6,59 @@ interface UseCameraOptions {
 
 export function useCamera({ videoRef }: UseCameraOptions) {
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double initialization in React strict mode
+    if (isInitializedRef.current) return;
+
+    let mounted = true;
+
     const initCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" },
         });
 
+        if (!mounted) {
+          // Component unmounted during async operation, clean up immediately
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        isInitializedRef.current = true;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       } catch (error) {
-        console.error("Camera error:", error);
-        setCameraError("Failed to access camera. Please grant camera permissions.");
+        if (mounted) {
+          console.error("Camera error:", error);
+          setCameraError("Failed to access camera. Please grant camera permissions.");
+        }
       }
     };
 
     void initCamera();
 
     return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
+      mounted = false;
+      isInitializedRef.current = false;
+
+      // Stop all tracks from the stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          console.log("Camera track stopped:", track.kind);
+        });
+        streamRef.current = null;
+      }
+
+      // Clear video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [videoRef]);

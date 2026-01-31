@@ -182,7 +182,9 @@ export function useBarcodeScanner({
   }, []);
 
   useEffect(() => {
-    if (videoRef.current && barcodeDetectorRef.current) {
+    const video = videoRef.current;
+
+    if (video && barcodeDetectorRef.current) {
       const handleLoadedData = () => {
         console.log("Video loaded, starting barcode scanning loop");
         console.log(
@@ -193,15 +195,38 @@ export function useBarcodeScanner({
         );
         animationFrameRef.current = requestAnimationFrame(() => void scanBarcode());
       };
-      videoRef.current.addEventListener("loadeddata", handleLoadedData);
+
+      video.addEventListener("loadeddata", handleLoadedData);
+
+      return () => {
+        // Remove event listener
+        video.removeEventListener("loadeddata", handleLoadedData);
+
+        // Cancel animation frame
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+
+        // Clear verification timeout
+        if (verificationTimeoutRef.current) {
+          clearTimeout(verificationTimeoutRef.current);
+          verificationTimeoutRef.current = null;
+        }
+
+        console.log("Barcode scanner cleanup complete");
+      };
     }
 
     return () => {
+      // Cleanup even if video wasn't ready
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (verificationTimeoutRef.current) {
         clearTimeout(verificationTimeoutRef.current);
+        verificationTimeoutRef.current = null;
       }
     };
   }, [scanBarcode, videoRef]);

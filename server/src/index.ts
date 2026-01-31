@@ -40,8 +40,17 @@ const rateLimiter = new RateLimiterRedis({
   duration: 15,
 });
 
+const discoveryRateLimiter = new RateLimiterRedis({
+  storeClient: redisClient,
+  keyPrefix: "barcode_scanner_discovery_rl",
+  points: 10,
+  duration: 60,
+});
+
 interface RoomData {
   clients: Set<string>;
+  creatorIp: string;
+  createdAt: number;
 }
 
 const rooms = new Map<string, RoomData>();
@@ -60,6 +69,27 @@ function getClientIp(socket: {
   return socket.handshake.address;
 }
 
+function getRequestIp(req: express.Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded && typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.socket.remoteAddress || "unknown";
+}
+
+function getIpSubnet(ip: string): string {
+  // Handle IPv4
+  if (ip.includes(".")) {
+    return ip.split(".").slice(0, 3).join(".");
+  }
+  // Handle IPv6 - use first 64 bits (4 groups)
+  if (ip.includes(":")) {
+    const groups = ip.split(":");
+    return groups.slice(0, 4).join(":");
+  }
+  return ip;
+}
+
 io.on("connection", (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
@@ -76,7 +106,11 @@ io.on("connection", (socket) => {
       } while (rooms.has(roomCode));
 
       if (!rooms.has(roomCode)) {
-        rooms.set(roomCode, { clients: new Set() });
+        rooms.set(roomCode, {
+          clients: new Set(),
+          creatorIp: ip,
+          createdAt: Date.now(),
+        });
       }
 
       const room = rooms.get(roomCode)!;
@@ -161,7 +195,11 @@ io.on("connection", (socket) => {
       }
 
       if (!rooms.has(roomCode)) {
-        rooms.set(roomCode, { clients: new Set() });
+        rooms.set(roomCode, {
+          clients: new Set(),
+          creatorIp: ip,
+          createdAt: Date.now(),
+        });
       }
 
       const room = rooms.get(roomCode)!;
@@ -221,8 +259,38 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
+});
+
+app.get("/api/nearby-rooms", async (req, res) => {
+  try {
+    const clientIp = getRequestIp(req);
+    await discoveryRateLimiter.consume(clientIp);
+
+    const clientSubnet = getIpSubnet(clientIp);
+
+    const nearbyRooms = Array.from(rooms.entries())
+      .filter(([_, data]) => {
+        const roomSubnet = getIpSubnet(data.creatorIp);
+        return roomSubnet === clientSubnet;
+      })
+      .map(([code, data]) => ({
+        code,
+        clientCount: data.clients.size,
+        age: Date.now() - data.createdAt,
+      }))
+      .sort((a, b) => a.age - b.age); // Newest first
+
+    res.json({ rooms: nearbyRooms });
+  } catch (error) {
+    if (error instanceof Error && "remainingPoints" in error) {
+      res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    } else {
+      console.error("Error discovering rooms:", error);
+      res.status(500).json({ error: "Failed to discover rooms" });
+    }
+  }
 });
 
 const server = httpServer.listen(PORT, () => {

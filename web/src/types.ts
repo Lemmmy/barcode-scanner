@@ -21,4 +21,5 @@ export interface AutoTypeSettings {
 
 export interface AppSettings {
   relayServerUrl: string;
+  autoDiscoverRooms: boolean;
 }

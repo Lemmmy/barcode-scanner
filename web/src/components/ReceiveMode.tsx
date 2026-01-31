@@ -9,6 +9,7 @@ import ScannedCodesLog from "./ScannedCodesLog";
 import AutoTypeSettings from "./AutoTypeSettings";
 import { AdvancedSettings } from "./AdvancedSettings";
 import { SettingsFlyout } from "./SettingsFlyout";
+import { RoomDiscovery } from "./RoomDiscovery";
 import { Label } from "./ui/Label";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
@@ -29,6 +30,7 @@ export default function ReceiveMode() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RoomCodeForm>({
     mode: "onSubmit",
@@ -127,6 +129,12 @@ export default function ReceiveMode() {
     setHasJoined(true);
   };
 
+  const handleRoomSelect = (code: string) => {
+    // Set the room code using react-hook-form and auto-submit
+    setValue("roomCode", code, { shouldValidate: true });
+    setHasJoined(true);
+  };
+
   const handleChangeCode = () => {
     const newCode = prompt("Enter a 4-digit room code:", roomCode);
     if (newCode && /^\d{4}$/.test(newCode)) {
@@ -177,6 +185,20 @@ export default function ReceiveMode() {
             <Button type="submit" size="large" fullWidth>
               Join Room
             </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-gray-50 px-2 text-gray-500">or</span>
+              </div>
+            </div>
+
+            <RoomDiscovery
+              onRoomSelect={handleRoomSelect}
+              autoDiscover={settings.autoDiscoverRooms}
+            />
 
             <AdvancedSettings />
           </form>

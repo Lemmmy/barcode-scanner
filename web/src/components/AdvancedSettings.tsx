@@ -21,6 +21,13 @@ export function AdvancedSettings() {
     });
   };
 
+  const handleAutoDiscoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      autoDiscoverRooms: e.target.checked,
+    });
+  };
+
   return (
     <div className="mt-4">
       <button
@@ -45,6 +52,22 @@ export function AdvancedSettings() {
             />
             <p className="mt-1 text-xs text-gray-500">The WebSocket server URL for barcode relay</p>
           </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="autoDiscoverRooms"
+              type="checkbox"
+              checked={settings.autoDiscoverRooms}
+              onChange={handleAutoDiscoverChange}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Label htmlFor="autoDiscoverRooms" className="font-normal">
+              Auto-discover nearby rooms
+            </Label>
+          </div>
+          <p className="text-xs text-gray-500">
+            Automatically refresh the list of nearby rooms every 10 seconds
+          </p>
         </div>
       )}
     </div>
