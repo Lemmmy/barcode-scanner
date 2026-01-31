@@ -2,16 +2,20 @@ import { useEffect, useState, useRef } from "react";
 
 interface UseCameraOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  key?: string | number | null; // Optional key to force reinitialization
 }
 
-export function useCamera({ videoRef }: UseCameraOptions) {
+export function useCamera({ videoRef, key }: UseCameraOptions) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const isInitializedRef = useRef(false);
+  const lastKeyRef = useRef<string | number | null | undefined>(undefined);
 
   useEffect(() => {
-    // Prevent double initialization in React strict mode
-    if (isInitializedRef.current) return;
+    // Reinitialize if key changes
+    const shouldReinitialize = key !== undefined && key !== lastKeyRef.current;
+    if (!shouldReinitialize && streamRef.current) return;
+
+    lastKeyRef.current = key;
 
     let mounted = true;
 
@@ -33,7 +37,6 @@ export function useCamera({ videoRef }: UseCameraOptions) {
         }
 
         streamRef.current = stream;
-        isInitializedRef.current = true;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -50,7 +53,6 @@ export function useCamera({ videoRef }: UseCameraOptions) {
 
     return () => {
       mounted = false;
-      isInitializedRef.current = false;
 
       // Stop all tracks from the stream
       if (streamRef.current) {
@@ -66,7 +68,7 @@ export function useCamera({ videoRef }: UseCameraOptions) {
         videoRef.current.srcObject = null;
       }
     };
-  }, [videoRef]);
+  }, [videoRef, key]);
 
   return { cameraError };
 }

@@ -27,17 +27,19 @@ export default function SendMode() {
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
 
-  const { isLogOpen, setLogOpen, reset, templates, activeTemplateId } = useAppStore(
-    useShallow((state) => ({
-      isLogOpen: state.isLogOpen,
-      setLogOpen: state.setLogOpen,
-      reset: state.reset,
-      templates: state.templates,
-      activeTemplateId: state.activeTemplateId,
-    })),
-  );
+  const { isLogOpen, setLogOpen, reset, templates, activeTemplateId, connectionStatus } =
+    useAppStore(
+      useShallow((state) => ({
+        isLogOpen: state.isLogOpen,
+        setLogOpen: state.setLogOpen,
+        reset: state.reset,
+        templates: state.templates,
+        activeTemplateId: state.activeTemplateId,
+        connectionStatus: state.connectionStatus,
+      })),
+    );
 
-  const { cameraError } = useCamera({ videoRef });
+  const { cameraError } = useCamera({ videoRef, key: connectionStatus.roomCode });
   const { incomingTemplate, setIncomingTemplate } = useSocketConnection();
 
   // Stable callback that accesses store state directly
