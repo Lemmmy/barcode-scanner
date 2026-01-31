@@ -4,7 +4,6 @@ COPY ./web/package.json /app/web/
 COPY ./server/package.json /app/server/
 WORKDIR /app
 RUN corepack enable
-RUN corepack install
 
 FROM pnpm AS development-dependencies-env
 COPY . /app/
