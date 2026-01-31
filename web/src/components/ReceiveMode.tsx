@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Settings as SettingsIcon } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { ArrowLeft, Settings as SettingsIcon, FileText } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "../store/useAppStore";
 import { createSocket, TypedSocket } from "../lib/socket";
@@ -9,7 +9,10 @@ import ScannedCodesLog from "./ScannedCodesLog";
 import AutoTypeSettings from "./AutoTypeSettings";
 import { AdvancedSettings } from "./AdvancedSettings";
 import { SettingsFlyout } from "./SettingsFlyout";
+import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
+import { TemplateImportDialog } from "./TemplateImportDialog";
 import { RoomDiscovery } from "./RoomDiscovery";
+import type { DataEntryTemplate } from "../types";
 import { Label } from "./ui/Label";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
@@ -25,6 +28,8 @@ export default function ReceiveMode() {
   const [hasJoined, setHasJoined] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
+  const [incomingTemplate, setIncomingTemplate] = useState<DataEntryTemplate | null>(null);
 
   const {
     register,
@@ -49,6 +54,7 @@ export default function ReceiveMode() {
     autoTypeSettings,
     settings,
     reset,
+    templates,
   } = useAppStore(
     useShallow((state) => ({
       setMode: state.setMode,
@@ -58,6 +64,7 @@ export default function ReceiveMode() {
       autoTypeSettings: state.autoTypeSettings,
       settings: state.settings,
       reset: state.reset,
+      templates: state.templates,
     })),
   );
 
@@ -83,27 +90,48 @@ export default function ReceiveMode() {
       setConnectionStatus({ connected: false, roomCode });
     });
 
-    socket.on("barcodeScanned", async (data: { code: string; timestamp: number }) => {
-      console.log("Received barcode:", data.code);
-      void addScannedCode({
-        id: generateId(),
-        code: data.code,
-        timestamp: data.timestamp,
-      });
+    socket.on(
+      "barcodeScanned",
+      async (data: {
+        code: string;
+        timestamp: number;
+        templateData?: Record<string, unknown>;
+        fieldOrder?: string[];
+      }) => {
+        console.log("Barcode received:", data.code, data.templateData ? "with template data" : "");
 
-      // Auto-type if in desktop mode
-      if (window.electronAPI && autoTypeSettings.enabled) {
-        try {
-          await window.electronAPI.autoType(data.code, autoTypeSettings);
-        } catch (error) {
-          console.error("Auto-type failed:", error);
+        void addScannedCode({
+          id: generateId(),
+          code: data.code,
+          timestamp: data.timestamp,
+          templateData: data.templateData,
+          fieldOrder: data.fieldOrder,
+        });
+
+        // Auto-type if in desktop mode
+        if (window.electronAPI && autoTypeSettings.enabled) {
+          try {
+            await window.electronAPI.autoType(
+              data.code,
+              autoTypeSettings,
+              data.templateData,
+              data.fieldOrder,
+            );
+          } catch (error) {
+            console.error("Auto-type failed:", error);
+          }
         }
-      }
-    });
+      },
+    );
 
-    socket.on("error", (message: string) => {
+    socket.on("error", (message) => {
       console.error("Socket error:", message);
       alert(`Error: ${message}`);
+    });
+
+    socket.on("templateShared", (template) => {
+      console.log("Received shared template:", template.name);
+      setIncomingTemplate(template);
     });
 
     socket.connect();
@@ -143,6 +171,33 @@ export default function ReceiveMode() {
       setConnectionStatus({ connected: connectionStatus.connected, roomCode: newCode });
     }
   };
+
+  const handleShareTemplate = useCallback((template: DataEntryTemplate) => {
+    if (socketRef.current?.connected) {
+      console.log("Sharing template with room:", template.name);
+      socketRef.current.emit("shareTemplate", template);
+    } else {
+      console.warn("Cannot share template: not connected to room");
+    }
+  }, []);
+
+  const handleImportTemplate = useCallback(() => {
+    if (!incomingTemplate) return;
+    const { addTemplate, updateTemplate, templates } = useAppStore.getState();
+
+    const existing = templates.find((t) => t.name === incomingTemplate.name);
+    if (existing) {
+      void updateTemplate(existing.id, incomingTemplate);
+    } else {
+      void addTemplate({
+        ...incomingTemplate,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+    setIncomingTemplate(null);
+  }, [incomingTemplate]);
 
   if (!hasJoined) {
     return (
@@ -232,6 +287,13 @@ export default function ReceiveMode() {
         <div className="flex items-center gap-2">
           {isDesktop && <AutoTypeSettings />}
           <button
+            onClick={() => setIsTemplateManagerOpen(true)}
+            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
+            title="Templates"
+          >
+            <FileText className="h-6 w-6" />
+          </button>
+          <button
             onClick={() => setIsSettingsOpen(true)}
             className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
             title="Settings"
@@ -246,6 +308,21 @@ export default function ReceiveMode() {
       </div>
 
       <SettingsFlyout isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <TemplateManagerFlyout
+        isOpen={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        mode="receive"
+        onShareTemplate={handleShareTemplate}
+      />
+      {incomingTemplate && (
+        <TemplateImportDialog
+          open={true}
+          onOpenChange={(open) => !open && setIncomingTemplate(null)}
+          template={incomingTemplate}
+          existingTemplate={templates.find((t) => t.name === incomingTemplate.name)}
+          onConfirm={handleImportTemplate}
+        />
+      )}
     </div>
   );
 }

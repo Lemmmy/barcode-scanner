@@ -7,11 +7,12 @@ import type {
   ConnectionStatus,
   AutoTypeSettings,
   AppSettings,
+  DataEntryTemplate,
 } from "../types";
 import type { CSVExportOptions } from "../lib/csv";
 import { TypedSocket } from "@/lib/socket";
 import { getDefaultRelayServerUrl } from "@/lib/constants";
-import { scannedCodesService } from "@/lib/db";
+import { scannedCodesService, templatesService } from "@/lib/db";
 
 interface AppState {
   mode: AppMode;
@@ -23,6 +24,8 @@ interface AppState {
   autoTypeSettings: AutoTypeSettings;
   settings: AppSettings;
   exportPreferences: CSVExportOptions;
+  templates: DataEntryTemplate[];
+  activeTemplateId: string | null;
 
   setMode: (mode: AppMode) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
@@ -35,6 +38,11 @@ interface AppState {
   setAutoTypeSettings: (settings: AutoTypeSettings) => void;
   setSettings: (settings: AppSettings) => void;
   setExportPreferences: (preferences: CSVExportOptions) => void;
+  addTemplate: (template: DataEntryTemplate) => Promise<void>;
+  updateTemplate: (id: string, template: Partial<DataEntryTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
+  loadTemplates: () => Promise<void>;
+  setActiveTemplateId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -49,9 +57,10 @@ export const useAppStore = create<AppState>()(
         isLogOpen: false,
         socketRef: null,
         autoTypeSettings: {
-          enabled: true,
-          keypressDelay: 50,
-          keyAfterCode: "enter",
+          enabled: false,
+          keypressDelay: 0,
+          keyBetweenFields: "Tab",
+          keyAfterCode: "Enter",
         },
         settings: {
           relayServerUrl: getDefaultRelayServerUrl(),
@@ -63,6 +72,8 @@ export const useAppStore = create<AppState>()(
           separator: "comma",
           newline: "crlf",
         },
+        templates: [],
+        activeTemplateId: null,
 
         setMode: (mode) => set({ mode }),
 
@@ -96,6 +107,38 @@ export const useAppStore = create<AppState>()(
 
         setExportPreferences: (preferences) => set({ exportPreferences: preferences }),
 
+        addTemplate: async (template) => {
+          await templatesService.add(template);
+          const templates = await templatesService.getAll();
+          set((state) => {
+            state.templates = templates;
+          });
+        },
+        updateTemplate: async (id, updates) => {
+          await templatesService.update(id, updates);
+          const templates = await templatesService.getAll();
+          set((state) => {
+            state.templates = templates;
+          });
+        },
+        deleteTemplate: async (id) => {
+          await templatesService.delete(id);
+          const templates = await templatesService.getAll();
+          set((state) => {
+            state.templates = templates;
+            if (state.activeTemplateId === id) {
+              state.activeTemplateId = null;
+            }
+          });
+        },
+        loadTemplates: async () => {
+          const templates = await templatesService.getAll();
+          set((state) => {
+            state.templates = templates;
+          });
+        },
+        setActiveTemplateId: (id) => set({ activeTemplateId: id }),
+
         reset: () =>
           set({
             mode: "landing",
@@ -107,10 +150,11 @@ export const useAppStore = create<AppState>()(
       {
         name: "barcode-scanner-storage",
         partialize: (state) => ({
-          isMuted: state.isMuted,
-          autoTypeSettings: state.autoTypeSettings,
           settings: state.settings,
+          autoTypeSettings: state.autoTypeSettings,
           exportPreferences: state.exportPreferences,
+          activeTemplateId: state.activeTemplateId,
+          isMuted: state.isMuted,
         }),
       },
     ),

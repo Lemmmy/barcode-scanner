@@ -43,7 +43,7 @@ const rateLimiter = new RateLimiterRedis({
 const discoveryRateLimiter = new RateLimiterRedis({
   storeClient: redisClient,
   keyPrefix: "barcode_scanner_discovery_rl",
-  points: 10,
+  points: 12,
   duration: 60,
 });
 
@@ -224,24 +224,53 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("scanBarcode", (code: string) => {
+  socket.on(
+    "scanBarcode",
+    (payload: { code: string; templateData?: Record<string, unknown>; fieldOrder?: string[] }) => {
+      if (!currentRoom) {
+        socket.emit("error", "Not in a room");
+        return;
+      }
+
+      if (
+        !payload ||
+        typeof payload.code !== "string" ||
+        payload.code.length === 0 ||
+        payload.code.length > 1000
+      ) {
+        socket.emit("error", "Invalid barcode");
+        return;
+      }
+
+      const data = {
+        code: payload.code,
+        timestamp: Date.now(),
+        templateData: payload.templateData,
+        fieldOrder: payload.fieldOrder,
+      };
+
+      socket.to(currentRoom).emit("barcodeScanned", data);
+      console.log(
+        `Barcode scanned in room ${currentRoom}: ${payload.code}`,
+        payload.templateData ? "with template data" : "",
+      );
+    },
+  );
+
+  socket.on("shareTemplate", (template: unknown) => {
     if (!currentRoom) {
       socket.emit("error", "Not in a room");
       return;
     }
 
-    if (typeof code !== "string" || code.length === 0 || code.length > 1000) {
-      socket.emit("error", "Invalid barcode");
+    if (!template || typeof template !== "object") {
+      socket.emit("error", "Invalid template");
       return;
     }
 
-    const data = {
-      code,
-      timestamp: Date.now(),
-    };
-
-    socket.to(currentRoom).emit("barcodeScanned", data);
-    console.log(`Barcode scanned in room ${currentRoom}: ${code}`);
+    // Broadcast template to all other clients in the room (not the sender)
+    socket.to(currentRoom).emit("templateShared", template);
+    console.log(`Template shared in room ${currentRoom}`);
   });
 
   socket.on("disconnect", () => {

@@ -42,6 +42,17 @@ export function ScannedCodeItem({
             </span>
           )}
         </div>
+        {item.templateData && Object.keys(item.templateData).length > 0 && (
+          <div className="mt-1 space-y-0.5">
+            {Object.entries(item.templateData)
+              .filter(([key]) => key !== "__barcode" && key !== "__fieldOrder")
+              .map(([key, value]) => (
+                <div key={key} className="text-xs text-gray-600">
+                  <span className="font-medium">{key}:</span> <span>{String(value)}</span>
+                </div>
+              ))}
+          </div>
+        )}
         <p className="text-xs text-gray-500">{formatTime(item.timestamp)}</p>
       </div>
       {isDesktop ? (

@@ -1,7 +1,7 @@
-import { newlineTypes } from "@/lib/csv";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { newlineTypes } from "@/lib/csv";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../store/useAppStore";
 import { Button } from "./ui/Button";
@@ -43,6 +43,7 @@ export function ExportDialog({ open, onOpenChange, onExport }: ExportDialogProps
   const {
     register,
     handleSubmit,
+    control,
     watch,
     formState: { errors },
   } = useForm<ExportFormData>({
@@ -68,7 +69,17 @@ export function ExportDialog({ open, onOpenChange, onExport }: ExportDialogProps
 
         <div className="space-y-4 py-4">
           <div className="flex items-center space-x-2">
-            <Checkbox id="includeHeader" {...register("includeHeader")} />
+            <Controller
+              name="includeHeader"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="includeHeader"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
             <Label htmlFor="includeHeader" className="text-sm font-normal">
               Include header row
             </Label>

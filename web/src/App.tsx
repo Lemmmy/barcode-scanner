@@ -19,6 +19,9 @@ function App() {
         // Load scanned codes from IndexedDB
         await useAppStore.getState().loadScannedCodes();
 
+        // Load templates from IndexedDB
+        await useAppStore.getState().loadTemplates();
+
         // Check if running in Electron and set mode to receive
         if (window.electronAPI) {
           useAppStore.getState().setMode("receive");

@@ -3,6 +3,9 @@ import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../store/useAppStore";
 import type { AutoTypeSettings as AutoTypeSettingsType } from "../types";
+import { KeyCapture } from "./KeyCapture";
+import { Checkbox } from "./ui/Checkbox";
+import { Label } from "./ui/Label";
 
 export default function AutoTypeSettings() {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,23 +55,15 @@ export default function AutoTypeSettings() {
 
             <div className="space-y-4">
               {/* Enable/Disable Toggle */}
-              <div className="flex items-center justify-between">
-                <label htmlFor="autoTypeEnabled" className="text-sm font-medium text-gray-700">
-                  Auto-Type Enabled
-                </label>
-                <button
+              <div className="flex items-center gap-2">
+                <Checkbox
                   id="autoTypeEnabled"
-                  onClick={handleToggleEnabled}
-                  className={`relative h-8 w-14 rounded-full transition-colors ${
-                    autoTypeSettings.enabled ? "bg-blue-600" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${
-                      autoTypeSettings.enabled ? "translate-x-7" : "translate-x-1"
-                    }`}
-                  />
-                </button>
+                  checked={autoTypeSettings.enabled}
+                  onCheckedChange={handleToggleEnabled}
+                />
+                <Label htmlFor="autoTypeEnabled" className="text-sm font-normal">
+                  Auto-Type Enabled
+                </Label>
               </div>
 
               {/* Keypress Delay */}
@@ -95,26 +90,39 @@ export default function AutoTypeSettings() {
                 </div>
               </div>
 
-              {/* Key After Code */}
+              {/* Key Between Fields */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Key to Press After Code
+                  Key Between Fields
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["enter", "right", "down"] as const).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => handleKeyAfterCodeChange(key)}
-                      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                        autoTypeSettings.keyAfterCode === key
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {key === "enter" ? "Enter" : key === "right" ? "Right →" : "Down ↓"}
-                    </button>
-                  ))}
-                </div>
+                <KeyCapture
+                  value={autoTypeSettings.keyBetweenFields || "Tab"}
+                  onChange={(key) =>
+                    setAutoTypeSettings({
+                      ...autoTypeSettings,
+                      keyBetweenFields: key,
+                    })
+                  }
+                  placeholder="Tab"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Click button and press the key to use between fields
+                </p>
+              </div>
+
+              {/* Key After Row */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Key After Row
+                </label>
+                <KeyCapture
+                  value={autoTypeSettings.keyAfterCode || "Enter"}
+                  onChange={(key) => handleKeyAfterCodeChange(key)}
+                  placeholder="Enter"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Click button and press the key to use at end of row
+                </p>
               </div>
             </div>
 

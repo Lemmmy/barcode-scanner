@@ -9,9 +9,7 @@ export interface NearbyRoomsResponse {
 }
 
 export async function discoverNearbyRooms(serverUrl?: string): Promise<NearbyRoom[]> {
-  const url = serverUrl
-    ? `${serverUrl}/api/nearby-rooms`
-    : "/api/nearby-rooms";
+  const url = serverUrl ? `${serverUrl}/api/nearby-rooms` : "/api/nearby-rooms";
 
   const response = await fetch(url);
 

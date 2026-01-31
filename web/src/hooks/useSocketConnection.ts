@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { createSocket } from "../lib/socket";
 import { useShallow } from "zustand/react/shallow";
+import type { DataEntryTemplate } from "../types";
 
 export function useSocketConnection() {
+  const [incomingTemplate, setIncomingTemplate] = useState<DataEntryTemplate | null>(null);
+
   const { connectionStatus, setConnectionStatus, setSocketRef, settings } = useAppStore(
     useShallow((state) => ({
       connectionStatus: state.connectionStatus,
@@ -39,6 +42,11 @@ export function useSocketConnection() {
       alert(`Error: ${message}`);
     });
 
+    socket.on("templateShared", (template: DataEntryTemplate) => {
+      console.log("Received shared template:", template.name);
+      setIncomingTemplate(template);
+    });
+
     console.log("useSocketConnection: Connecting socket");
     socket.connect();
 
@@ -48,4 +56,6 @@ export function useSocketConnection() {
       setSocketRef(null);
     };
   }, [setConnectionStatus, setSocketRef]);
+
+  return { incomingTemplate, setIncomingTemplate };
 }

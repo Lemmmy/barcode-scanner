@@ -18,7 +18,12 @@ export function useCamera({ videoRef }: UseCameraOptions) {
     const initCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            aspectRatio: { ideal: 16 / 9 },
+          },
         });
 
         if (!mounted) {

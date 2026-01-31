@@ -7,7 +7,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/DropdownMenu";
-import { ExportDialog, type CSVExportOptions } from "./ExportDialog";
+import { ExportDialog } from "./ExportDialog";
+import type { CSVExportOptions } from "../lib/csv";
 
 interface ExportButtonProps {
   onExport: (options: CSVExportOptions, action: "download" | "copy") => void;

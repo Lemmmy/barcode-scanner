@@ -11,33 +11,86 @@ let mainWindow: BrowserWindow | null = null;
 interface AutoTypeSettings {
   enabled: boolean;
   keypressDelay: number;
-  keyAfterCode: "enter" | "right" | "down";
+  keyBetweenFields: string;
+  keyAfterCode: string;
 }
 
-const keyMap: Record<string, Key> = {
-  enter: Key.Enter,
-  right: Key.Right,
-  down: Key.Down,
-};
+// Map common key names to nut.js Key enum
+function getKeyFromString(keyName: string): Key | null {
+  const normalized = keyName.toLowerCase().trim();
+  const keyMap: Record<string, Key> = {
+    enter: Key.Enter,
+    return: Key.Enter,
+    tab: Key.Tab,
+    right: Key.Right,
+    left: Key.Left,
+    down: Key.Down,
+    up: Key.Up,
+    space: Key.Space,
+    escape: Key.Escape,
+    esc: Key.Escape,
+  };
+  return keyMap[normalized] || null;
+}
 
-async function autoTypeBarcode(code: string, settings: AutoTypeSettings) {
+async function autoTypeBarcode(
+  code: string,
+  settings: AutoTypeSettings,
+  templateData?: Record<string, unknown>,
+  fieldOrder?: string[],
+) {
   if (!settings.enabled) return;
 
   try {
     keyboard.config.autoDelayMs = settings.keypressDelay;
 
-    // Type the entire barcode string
-    await keyboard.type(code);
+    const keyBetweenFields = getKeyFromString(settings.keyBetweenFields || "Tab");
+    const keyAfterRow = getKeyFromString(settings.keyAfterCode || "Enter");
 
-    // Optional delay before pressing the key after code
-    if (settings.keypressDelay > 0) {
-      await new Promise((resolve) => setTimeout(resolve, settings.keypressDelay));
-    }
+    // If we have field order from template, type fields in order
+    if (fieldOrder && fieldOrder.length > 0) {
+      for (let i = 0; i < fieldOrder.length; i++) {
+        const fieldName = fieldOrder[i];
 
-    // Press the configured key after typing
-    const key = keyMap[settings.keyAfterCode];
-    if (key) {
-      await keyboard.type(key);
+        // Handle barcode placeholder
+        if (fieldName === "__barcode") {
+          await keyboard.type(code);
+        } else {
+          // Type template field value (or empty string if not present)
+          const value = templateData?.[fieldName];
+          if (value !== undefined && value !== null && value !== "") {
+            await keyboard.type(String(value));
+          }
+          // If value is empty/null, we still press the key to move to next field
+        }
+
+        // Press the key between fields (except after last field)
+        if (i < fieldOrder.length - 1 && keyBetweenFields) {
+          if (settings.keypressDelay > 0) {
+            await new Promise((resolve) => setTimeout(resolve, settings.keypressDelay));
+          }
+          await keyboard.type(keyBetweenFields);
+        }
+      }
+
+      // Press the key after the entire row
+      if (keyAfterRow) {
+        if (settings.keypressDelay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, settings.keypressDelay));
+        }
+        await keyboard.type(keyAfterRow);
+      }
+    } else {
+      // Fallback: just type the barcode (no template)
+      await keyboard.type(code);
+
+      if (settings.keypressDelay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, settings.keypressDelay));
+      }
+
+      if (keyAfterRow) {
+        await keyboard.type(keyAfterRow);
+      }
     }
   } catch (error) {
     console.error("Auto-type error:", error);
@@ -88,9 +141,18 @@ app.on("window-all-closed", () => {
 });
 
 // IPC handlers
-ipcMain.handle("auto-type", async (_event, code: string, settings: AutoTypeSettings) => {
-  await autoTypeBarcode(code, settings);
-});
+ipcMain.handle(
+  "auto-type",
+  async (
+    _event,
+    code: string,
+    settings: AutoTypeSettings,
+    templateData?: Record<string, unknown>,
+    fieldOrder?: string[],
+  ) => {
+    await autoTypeBarcode(code, settings, templateData, fieldOrder);
+  },
+);
 
 ipcMain.handle("get-platform", () => {
   return process.platform;
