@@ -4,21 +4,34 @@ import LandingPage from "./components/LandingPage";
 import SendMode from "./components/SendMode";
 import ReceiveMode from "./components/ReceiveMode";
 import { useShallow } from "zustand/react/shallow";
+import { migrateFromLocalStorage } from "./lib/migration";
 
 function App() {
-  const { mode, setMode } = useAppStore(
-    useShallow((state) => ({
-      mode: state.mode,
-      setMode: state.setMode,
-    })),
-  );
+  const mode = useAppStore(useShallow((state) => state.mode));
 
-  // If running in Electron, start in receive mode
+  // Initialize app: migrate data and load scanned codes
   useEffect(() => {
-    if (window.electronAPI && mode === "landing") {
-      setMode("receive");
-    }
-  }, [mode, setMode]);
+    const initialize = async () => {
+      try {
+        // Migrate from localStorage if needed
+        await migrateFromLocalStorage();
+
+        // Load scanned codes from IndexedDB
+        await useAppStore.getState().loadScannedCodes();
+
+        // Check if running in Electron and set mode to receive
+        if (window.electronAPI) {
+          useAppStore.getState().setMode("receive");
+        }
+      } catch (error) {
+        console.error("Failed to initialize app:", error);
+        // App can still function without IndexedDB (e.g., in private browsing)
+        // Just log the error and continue
+      }
+    };
+
+    void initialize();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

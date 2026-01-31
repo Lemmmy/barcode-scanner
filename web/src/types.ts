@@ -4,6 +4,8 @@ export interface ScannedCode {
   id: string;
   code: string;
   timestamp: number;
+  count: number;
+  firstScannedAt: number;
 }
 
 export interface ConnectionStatus {

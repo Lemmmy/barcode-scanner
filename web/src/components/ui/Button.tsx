@@ -2,7 +2,11 @@ import { clsx } from "clsx";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const buttonVariants = cva(
-  "rounded-lg font-semibold transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+  [
+    "rounded-lg font-semibold transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+    "whitespace-nowrap inline-flex items-center justify-center",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+  ],
   {
     variants: {
       variant: {
@@ -11,10 +15,10 @@ const buttonVariants = cva(
         ghost: "text-gray-700 hover:bg-gray-100 active:bg-gray-200",
       },
       size: {
-        default: "px-6 py-3 text-base",
-        large: "px-6 py-4 text-lg",
-        small: "px-4 py-2 text-sm",
-        icon: "p-2",
+        default: "h-10 gap-2 px-4 text-base [&_svg]:size-4 [&_svg]:-ml-0.5",
+        large: "h-12 gap-2 px-4 text-lg [&_svg]:size-5 [&_svg]:-ml-0.5",
+        small: "h-8 gap-1.5 px-3 text-sm [&_svg]:size-4 [&_svg]:-ml-0.5",
+        icon: "size-10 [&_svg]:size-5 [&_svg]:-ml-0.5",
       },
       fullWidth: {
         true: "w-full",

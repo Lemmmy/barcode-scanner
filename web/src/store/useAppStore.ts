@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 import type {
   AppMode,
   ScannedCode,
@@ -7,8 +8,10 @@ import type {
   AutoTypeSettings,
   AppSettings,
 } from "../types";
+import type { CSVExportOptions } from "../lib/csv";
 import { TypedSocket } from "@/lib/socket";
 import { getDefaultRelayServerUrl } from "@/lib/constants";
+import { scannedCodesService } from "@/lib/db";
 
 interface AppState {
   mode: AppMode;
@@ -19,77 +22,96 @@ interface AppState {
   socketRef: TypedSocket | null;
   autoTypeSettings: AutoTypeSettings;
   settings: AppSettings;
+  exportPreferences: CSVExportOptions;
 
   setMode: (mode: AppMode) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
-  addScannedCode: (code: ScannedCode) => void;
-  clearScannedCodes: () => void;
+  addScannedCode: (code: Omit<ScannedCode, "count" | "firstScannedAt">) => Promise<void>;
+  loadScannedCodes: () => Promise<void>;
+  clearScannedCodes: () => Promise<void>;
   toggleMute: () => void;
   setLogOpen: (open: boolean) => void;
   setSocketRef: (socket: TypedSocket | null) => void;
   setAutoTypeSettings: (settings: AutoTypeSettings) => void;
   setSettings: (settings: AppSettings) => void;
+  setExportPreferences: (preferences: CSVExportOptions) => void;
   reset: () => void;
 }
 
-const MAX_CODES = 50;
-
 export const useAppStore = create<AppState>()(
-  persist(
-    (set) => ({
-      mode: "landing",
-      connectionStatus: { connected: false, roomCode: null },
-      scannedCodes: [],
-      isMuted: false,
-      isLogOpen: false,
-      socketRef: null,
-      autoTypeSettings: {
-        enabled: true,
-        keypressDelay: 50,
-        keyAfterCode: "enter",
-      },
+  immer(
+    persist(
+      (set) => ({
+        mode: "landing",
+        connectionStatus: { connected: false, roomCode: null },
+        scannedCodes: [],
+        isMuted: false,
+        isLogOpen: false,
+        socketRef: null,
+        autoTypeSettings: {
+          enabled: true,
+          keypressDelay: 50,
+          keyAfterCode: "enter",
+        },
+        settings: {
+          relayServerUrl: getDefaultRelayServerUrl(),
+        },
+        exportPreferences: {
+          includeHeader: true,
+          headerFieldName: "Barcode",
+          separator: "comma",
+          newline: "crlf",
+        },
 
-      settings: {
-        relayServerUrl: getDefaultRelayServerUrl(),
-      },
+        setMode: (mode) => set({ mode }),
 
-      setMode: (mode) => set({ mode }),
+        setConnectionStatus: (status) => set({ connectionStatus: status }),
 
-      setConnectionStatus: (status) => set({ connectionStatus: status }),
+        addScannedCode: async (code) => {
+          await scannedCodesService.addOrUpdate(code);
+          const codes = await scannedCodesService.getAll();
+          set({ scannedCodes: codes });
+        },
 
-      addScannedCode: (code) =>
-        set((state) => ({
-          scannedCodes: [code, ...state.scannedCodes].slice(0, MAX_CODES),
-        })),
+        loadScannedCodes: async () => {
+          const codes = await scannedCodesService.getAll();
+          set({ scannedCodes: codes });
+        },
 
-      clearScannedCodes: () => set({ scannedCodes: [] }),
+        clearScannedCodes: async () => {
+          await scannedCodesService.clear();
+          set({ scannedCodes: [] });
+        },
 
-      toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+        toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
 
-      setLogOpen: (open) => set({ isLogOpen: open }),
+        setLogOpen: (open) => set({ isLogOpen: open }),
 
-      setSocketRef: (socket) => set({ socketRef: socket }),
+        setSocketRef: (socket) => set({ socketRef: socket }),
 
-      setAutoTypeSettings: (settings) => set({ autoTypeSettings: settings }),
+        setAutoTypeSettings: (settings) => set({ autoTypeSettings: settings }),
 
-      setSettings: (settings) => set({ settings }),
+        setSettings: (settings) => set({ settings }),
 
-      reset: () =>
-        set({
-          mode: "landing",
-          connectionStatus: { connected: false, roomCode: null },
-          isLogOpen: false,
-          socketRef: null,
-        }),
-    }),
-    {
-      name: "barcode-scanner-storage",
-      partialize: (state) => ({
-        scannedCodes: state.scannedCodes,
-        isMuted: state.isMuted,
-        autoTypeSettings: state.autoTypeSettings,
-        settings: state.settings,
+        setExportPreferences: (preferences) => set({ exportPreferences: preferences }),
+
+        reset: () =>
+          set({
+            mode: "landing",
+            connectionStatus: { connected: false, roomCode: null },
+            isLogOpen: false,
+            socketRef: null,
+          }),
       }),
-    },
+      {
+        name: "barcode-scanner-storage",
+        partialize: (state) => ({
+          isMuted: state.isMuted,
+          autoTypeSettings: state.autoTypeSettings,
+          settings: state.settings,
+          exportPreferences: state.exportPreferences,
+        }),
+      },
+    ),
   ),
 );

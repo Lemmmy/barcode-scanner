@@ -54,7 +54,7 @@ export default function SendMode() {
       playBeep();
     }
 
-    addScannedCode({
+    void addScannedCode({
       id: generateId(),
       code,
       timestamp: Date.now(),

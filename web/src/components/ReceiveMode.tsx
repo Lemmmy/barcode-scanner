@@ -82,7 +82,8 @@ export default function ReceiveMode() {
     });
 
     socket.on("barcodeScanned", async (data: { code: string; timestamp: number }) => {
-      addScannedCode({
+      console.log("Received barcode:", data.code);
+      void addScannedCode({
         id: generateId(),
         code: data.code,
         timestamp: data.timestamp,
@@ -108,7 +109,14 @@ export default function ReceiveMode() {
     return () => {
       socket.disconnect();
     };
-  }, [hasJoined, roomCode, addScannedCode, setConnectionStatus]);
+  }, [
+    hasJoined,
+    roomCode,
+    addScannedCode,
+    setConnectionStatus,
+    settings.relayServerUrl,
+    autoTypeSettings,
+  ]);
 
   const handleBack = () => {
     reset();
