@@ -1,5 +1,5 @@
 FROM node:24-alpine AS pnpm
-COPY ./pnpm-workspace.yaml ./package.json pnpm-lock.yaml /app/
+COPY ./pnpm-workspace.yaml ./pnpm-lock.yaml /app/
 COPY ./web/package.json /app/web/
 COPY ./server/package.json /app/server/
 WORKDIR /app
@@ -32,7 +32,7 @@ RUN pnpm run build
 
 FROM node:24-alpine
 RUN corepack enable
-COPY ./pnpm-workspace.yaml ./package.json pnpm-lock.yaml /app/
+COPY ./pnpm-workspace.yaml ./pnpm-lock.yaml /app/
 COPY ./web/package.json /app/web/
 COPY ./server/package.json /app/server/
 WORKDIR /app
