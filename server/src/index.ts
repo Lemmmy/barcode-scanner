@@ -338,7 +338,7 @@ app.get("/api/nearby-rooms", async (req, res) => {
 
 // SPA fallback
 if (SERVE_WEB_APP) {
-  app.get("/*", (_req, res) => {
+  app.get("/*splat", (_req, res) => {
     res.sendFile(path.join(WEB_APP_PATH, "index.html"));
   });
 }
