@@ -38,15 +38,6 @@ if (TRUST_PROXY) {
 if (SERVE_WEB_APP) {
   console.log(`Serving web app from: ${WEB_APP_PATH}`);
   app.use(express.static(WEB_APP_PATH));
-
-  // SPA fallback - serve index.html for all non-API routes
-  app.get("*", (req, res, next) => {
-    // Skip if it's a socket.io request or other special paths
-    if (req.path.startsWith("/socket.io")) {
-      return next();
-    }
-    res.sendFile(path.join(WEB_APP_PATH, "index.html"));
-  });
 }
 
 const redisClient = new Redis({
@@ -344,6 +335,13 @@ app.get("/api/nearby-rooms", async (req, res) => {
     }
   }
 });
+
+// SPA fallback
+if (SERVE_WEB_APP) {
+  app.get("/*", (_req, res) => {
+    res.sendFile(path.join(WEB_APP_PATH, "index.html"));
+  });
+}
 
 const server = httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
