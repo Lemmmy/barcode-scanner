@@ -43,6 +43,7 @@ function TemplateFieldInputComponent({ field, register, control, error }: Templa
         return (
           <Input
             type="number"
+            step="any"
             {...register(field.id, {
               ...registerOptions,
               valueAsNumber: true,
