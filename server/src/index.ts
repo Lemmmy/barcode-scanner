@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import Redis from "ioredis";
 import { RateLimiterRedis } from "rate-limiter-flexible";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -20,10 +21,27 @@ const PORT = process.env.PORT || 3001;
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379", 10);
 const TRUST_PROXY = process.env.TRUST_PROXY === "true";
-const MAX_ROOM_CLIENTS = 10;
+const MAX_ROOM_CLIENTS = 50;
+const SERVE_WEB_APP = process.env.SERVE_WEB_APP === "true";
+const WEB_APP_PATH = process.env.WEB_APP_PATH || path.join(__dirname, "../../web/dist");
 
 if (TRUST_PROXY) {
   app.set("trust proxy", true);
+}
+
+// Serve static web app files if enabled
+if (SERVE_WEB_APP) {
+  console.log(`Serving web app from: ${WEB_APP_PATH}`);
+  app.use(express.static(WEB_APP_PATH));
+
+  // SPA fallback - serve index.html for all non-API routes
+  app.get("*", (req, res, next) => {
+    // Skip if it's a socket.io request or other special paths
+    if (req.path.startsWith("/socket.io")) {
+      return next();
+    }
+    res.sendFile(path.join(WEB_APP_PATH, "index.html"));
+  });
 }
 
 const redisClient = new Redis({

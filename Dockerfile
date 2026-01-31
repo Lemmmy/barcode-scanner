@@ -49,16 +49,12 @@ COPY --from=build-server-env /app/server/dist /app/server/dist
 # Copy server source (needed for runtime)
 COPY ./server/src /app/server/src
 
-# Install a simple static file server for the web app
-RUN npm install -g serve
+# Expose port (server serves both API and web app)
+EXPOSE 3001
 
-# Expose ports
-EXPOSE 3000 3001
+# Set environment variable to enable static file serving
+ENV SERVE_WEB_APP=true
 
-# Create startup script
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'cd /app/web && serve -s dist -l 3000 &' >> /app/start.sh && \
-    echo 'cd /app/server && node dist/index.js' >> /app/start.sh && \
-    chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+# Start the server (it will serve both API and web app)
+WORKDIR /app/server
+CMD ["node", "dist/index.js"]
