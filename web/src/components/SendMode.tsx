@@ -289,7 +289,7 @@ export default function SendMode() {
           onConfirm={handleImportTemplate}
         />
       )}
-      <DebugConsole />
+      {import.meta.env.DEV && <DebugConsole />}
     </div>
   );
 }
