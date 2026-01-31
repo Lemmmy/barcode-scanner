@@ -5,8 +5,13 @@ import Redis from "ioredis";
 import { RateLimiterRedis } from "rate-limiter-flexible";
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
