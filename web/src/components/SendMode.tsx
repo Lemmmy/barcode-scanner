@@ -39,14 +39,8 @@ export default function SendMode() {
     const { socketRef, isMuted, addScannedCode, templates, activeTemplateId } =
       useAppStore.getState();
 
-    console.log(
-      "handleBarcodeDetected called, socketRef:",
-      socketRef,
-      "connected:",
-      socketRef?.connected,
-    );
     if (!socketRef?.connected) {
-      console.log("Socket not connected, skipping");
+      console.warn("Socket not connected, skipping detected barcode");
       return;
     }
 

@@ -36,6 +36,8 @@ export function SendModeHeader() {
         <button
           onClick={reset}
           className="rounded-lg bg-black/50 p-3 text-white backdrop-blur-sm transition-colors hover:bg-black/60 active:bg-black/70"
+          aria-label="Go Back"
+          title="Go Back"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
@@ -50,12 +52,16 @@ export function SendModeHeader() {
           <button
             onClick={toggleMute}
             className="rounded-lg bg-black/50 p-3 text-white backdrop-blur-sm transition-colors hover:bg-black/60 active:bg-black/70"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+            title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
           </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="rounded-lg bg-black/50 p-3 text-white backdrop-blur-sm transition-colors hover:bg-black/60 active:bg-black/70"
+            aria-label="Settings"
+            title="Settings"
           >
             <Settings className="h-6 w-6" />
           </button>

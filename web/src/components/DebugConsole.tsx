@@ -70,9 +70,9 @@ export function DebugConsole() {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg"
+        className="fixed bottom-4 left-4 z-50 rounded-full bg-blue-500 px-3 py-2 text-xs font-semibold text-white shadow-lg"
       >
-        Debug Console
+        Debug
       </button>
     );
   }

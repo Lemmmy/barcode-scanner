@@ -182,15 +182,15 @@ export function TemplateManagerFlyout({
                     {activeTemplateId === template.id && (
                       <Check className="h-5 w-5 text-blue-600" />
                     )}
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{template.name}</p>
+                    <div className="flex-1 w-full">
+                      <p className="font-medium text-gray-900 truncate">{template.name}</p>
                       <p className="text-sm text-gray-500">{template.fields.length} fields</p>
                     </div>
                   </button>
                 ) : (
                   <div className="flex flex-1 items-center gap-3">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{template.name}</p>
+                    <div className="flex-1 w-full">
+                      <p className="font-medium text-gray-900 truncate">{template.name}</p>
                       <p className="text-sm text-gray-500">{template.fields.length} fields</p>
                     </div>
                   </div>

@@ -22,10 +22,10 @@ export function SendModeControls({
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
 
-  const { activeTemplateId, templates } = useAppStore(
+  const { activeTemplateId, activeTemplateName } = useAppStore(
     useShallow((state) => ({
       activeTemplateId: state.activeTemplateId,
-      templates: state.templates,
+      activeTemplateName: state.templates.find((t) => t.id === state.activeTemplateId)?.name,
     })),
   );
 
@@ -44,7 +44,7 @@ export function SendModeControls({
       <div className="space-y-2 px-4 xs:py-4 flex flex-col items-center w-full">
         <LastScannedCode code={lastScannedCode} />
 
-        <div className="flex justify-center gap-3 w-full xs:max-w-[360px]">
+        <div className="flex justify-center gap-3 w-full xs:max-w-[360px] md:max-w-[480px]">
           {/* Pause Button */}
           <button
             onClick={() => setIsScanning(!isScanning)}
@@ -52,18 +52,10 @@ export function SendModeControls({
               "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
               "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
             )}
+            aria-label={isScanning ? "Pause Scanning" : "Resume Scanning"}
+            title={isScanning ? "Pause Scanning" : "Resume Scanning"}
           >
-            {isScanning ? (
-              <>
-                <Pause className="h-5 w-5" />
-                <span>Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="h-5 w-5" />
-                <span>Resume</span>
-              </>
-            )}
+            {isScanning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
 
           {/* Template Button */}
@@ -76,16 +68,19 @@ export function SendModeControls({
                 ? "bg-blue-500/80 text-white hover:bg-blue-500/90 active:bg-blue-600/90"
                 : "bg-white/10 text-white hover:bg-white/20 active:bg-white/30",
             )}
+            aria-label={activeTemplateId ? `Template: ${activeTemplateName}` : "No Template"}
+            title={activeTemplateId ? `Template: ${activeTemplateName}` : "No Template"}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex justify-center items-center gap-2 w-full">
               <FileText className="h-5 w-5" />
-              <span>Template</span>
+              {activeTemplateId ? (
+                <span className="text-center text-xs text-white/80 truncate">
+                  {activeTemplateName}
+                </span>
+              ) : (
+                <span className="text-center">Templates</span>
+              )}
             </span>
-            {activeTemplateId && (
-              <span className="text-center text-xs text-white/80 truncate w-full">
-                {templates.find((t) => t.id === activeTemplateId)?.name}
-              </span>
-            )}
           </button>
 
           {/* Log Button */}
@@ -95,9 +90,10 @@ export function SendModeControls({
               "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
               "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
             )}
+            aria-label="Log"
+            title="Log"
           >
             <List className="h-5 w-5" />
-            <span>Log</span>
           </button>
         </div>
       </div>
