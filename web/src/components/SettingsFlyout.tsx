@@ -26,6 +26,20 @@ export function SettingsFlyout({ isOpen, onClose }: SettingsFlyoutProps) {
     });
   };
 
+  const handleAutoDiscoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      autoDiscoverRooms: e.target.checked,
+    });
+  };
+
+  const handleIgnoreTildePrefixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      ignoreTildePrefix: e.target.checked,
+    });
+  };
+
   return (
     <>
       <div
@@ -69,6 +83,38 @@ export function SettingsFlyout({ isOpen, onClose }: SettingsFlyoutProps) {
                 The WebSocket server URL for barcode relay. Changes take effect on next connection.
               </p>
             </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                id="autoDiscoverRooms"
+                type="checkbox"
+                checked={settings.autoDiscoverRooms}
+                onChange={handleAutoDiscoverChange}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <Label htmlFor="autoDiscoverRooms" className="font-normal">
+                Auto-discover nearby rooms
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Automatically refresh the list of nearby rooms every 10 seconds
+            </p>
+
+            <div className="flex items-center gap-2">
+              <input
+                id="ignoreTildePrefix"
+                type="checkbox"
+                checked={settings.ignoreTildePrefix}
+                onChange={handleIgnoreTildePrefixChange}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <Label htmlFor="ignoreTildePrefix" className="font-normal">
+                Ignore tilde (~) prefix in barcodes
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Strip leading tilde characters from scanned barcodes (Send Mode only)
+            </p>
           </div>
         </div>
 

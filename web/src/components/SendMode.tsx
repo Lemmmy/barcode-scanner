@@ -42,7 +42,7 @@ export default function SendMode() {
 
   // Stable callback that accesses store state directly
   const handleBarcodeDetected = useCallback((code: string) => {
-    const { socketRef, isMuted, addScannedCode, templates, activeTemplateId } =
+    const { socketRef, isMuted, addScannedCode, templates, activeTemplateId, settings } =
       useAppStore.getState();
 
     if (!socketRef?.connected) {
@@ -50,20 +50,26 @@ export default function SendMode() {
       return;
     }
 
+    // Strip leading tildes if setting is enabled
+    let processedCode = code;
+    if (settings.ignoreTildePrefix) {
+      processedCode = code.replace(/^~+/, "");
+    }
+
     // Check if template is active
     const activeTemplate = templates.find((t) => t.id === activeTemplateId);
     if (activeTemplate) {
       // Show data entry dialog
-      setPendingCode(code);
+      setPendingCode(processedCode);
       if (!isMuted) {
         playBeep();
       }
-      setLastScannedCode(code);
+      setLastScannedCode(processedCode);
       return;
     }
 
-    console.log("Sending barcode to server:", code);
-    socketRef.emit("scanBarcode", { code });
+    console.log("Sending barcode to server:", processedCode);
+    socketRef.emit("scanBarcode", { code: processedCode });
 
     if (!isMuted) {
       playBeep();
@@ -71,12 +77,12 @@ export default function SendMode() {
 
     void addScannedCode({
       id: generateId(),
-      code,
+      code: processedCode,
       timestamp: Date.now(),
     });
 
     // Update last scanned code and trigger flash animation
-    setLastScannedCode(code);
+    setLastScannedCode(processedCode);
   }, []);
 
   const handleDataEntrySubmit = useCallback(

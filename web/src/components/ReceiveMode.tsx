@@ -7,7 +7,6 @@ import { generateId } from "../lib/utils";
 import RoomCodeDisplay from "./RoomCodeDisplay";
 import ScannedCodesLog from "./ScannedCodesLog";
 import AutoTypeSettings from "./AutoTypeSettings";
-import { AdvancedSettings } from "./AdvancedSettings";
 import { SettingsFlyout } from "./SettingsFlyout";
 import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
 import { TemplateImportDialog } from "./TemplateImportDialog";
@@ -254,8 +253,6 @@ export default function ReceiveMode() {
               onRoomSelect={handleRoomSelect}
               autoDiscover={settings.autoDiscoverRooms}
             />
-
-            <AdvancedSettings />
           </form>
         </div>
       </div>
