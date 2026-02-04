@@ -93,16 +93,10 @@ function TemplateFieldInputComponent({ field, register, control, error }: Templa
             rules={registerOptions}
             render={({ field: { onChange, value } }) => (
               <Input
-                type="date"
-                value={value ? dayjs(value).format("YYYY-MM-DD") : ""}
-                onChange={(e) => {
-                  const dateValue = e.target.value;
-                  if (dateValue) {
-                    onChange(dayjs(dateValue).format(field.dateFormat || "YYYY-MM-DD"));
-                  } else {
-                    onChange("");
-                  }
-                }}
+                type="text"
+                value={value || ""}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={field.dateFormat || "YYYY-MM-DD"}
               />
             )}
           />
