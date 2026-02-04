@@ -1,6 +1,6 @@
 {
   "name": "barcode-scanner-desktop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Barcode Scanner Desktop App - Receive Mode with Auto-Type",
   "main": "dist/main.js",
   "type": "module",
@@ -12,14 +12,15 @@
     "start": "electron ."
   },
   "dependencies": {
-    "@nut-tree-fork/nut-js": "^4.2.3"
+    "@nut-tree-fork/nut-js": "^4.2.3",
+    "p-queue": "^9.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
-    "typescript": "^5.4.2",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.2"
   },
   "build": {
     "appId": "com.barcodescanner.desktop",

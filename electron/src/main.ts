@@ -2,11 +2,15 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { keyboard, Key } from "@nut-tree-fork/nut-js";
+import PQueue from "p-queue";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
+
+// Queue for auto-typing operations to prevent interference
+const autoTypeQueue = new PQueue({ concurrency: 1 });
 
 interface AutoTypeSettings {
   enabled: boolean;
@@ -150,7 +154,10 @@ ipcMain.handle(
     templateData?: Record<string, unknown>,
     fieldOrder?: string[],
   ) => {
-    await autoTypeBarcode(code, settings, templateData, fieldOrder);
+    // Add to queue to prevent multiple auto-type operations from interfering
+    return autoTypeQueue.add(async () => {
+      await autoTypeBarcode(code, settings, templateData, fieldOrder);
+    });
   },
 );
 
