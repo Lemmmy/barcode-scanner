@@ -68,6 +68,7 @@ export const useAppStore = create<AppState>()(
           relayServerUrl: getDefaultRelayServerUrl(),
           autoDiscoverRooms: true,
           ignoreTildePrefix: false,
+          disableJavaScriptExecution: false,
         },
         exportPreferences: {
           includeHeader: true,

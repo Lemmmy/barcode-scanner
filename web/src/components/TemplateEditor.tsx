@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Plus } from "lucide-react";
-import type { DataEntryTemplate, FieldType } from "../types";
-import { TemplateFieldEditor } from "./TemplateFieldEditor";
+import { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { z } from "zod";
+import type { DataEntryTemplate } from "../types";
 import { BarcodePositionPlaceholder } from "./BarcodePositionPlaceholder";
+import { ScriptEditor } from "./ScriptEditor";
+import { TemplateFieldEditor } from "./TemplateFieldEditor";
+import { Button } from "./ui/Button";
 import {
   Dialog,
   DialogContent,
@@ -14,24 +16,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/Dialog";
+import { FormError } from "./ui/FormError";
 import { Input } from "./ui/Input";
 import { Label } from "./ui/Label";
-import { Button } from "./ui/Button";
-import { FormError } from "./ui/FormError";
 
 const fieldSchema = z.object({
   name: z.string().min(1, "Field name is required"),
   description: z.string().optional(),
-  type: z.enum(["text", "textarea", "number", "checkbox", "dropdown"]),
+  type: z.enum(["text", "textarea", "number", "checkbox", "dropdown", "date"]),
   required: z.boolean(),
   options: z.array(z.string()).optional(),
   checkboxOnValue: z.string().optional(),
   checkboxOffValue: z.string().optional(),
+  dateFormat: z.string().optional(),
 });
 
 const templateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
-  fields: z.array(fieldSchema).min(1, "At least one field is required"),
+  fields: z.array(fieldSchema),
+  postScanScript: z.string().optional(),
+  scriptUrl: z.string().optional(),
 });
 
 type TemplateFormData = z.infer<typeof templateSchema>;
@@ -52,6 +56,8 @@ export function TemplateEditor({
   onSave,
 }: TemplateEditorProps) {
   const [barcodePosition, setBarcodePosition] = useState(0);
+  const [postScanScript, setPostScanScript] = useState("");
+  const [scriptUrl, setScriptUrl] = useState("");
 
   const {
     register,
@@ -72,11 +78,18 @@ export function TemplateEditor({
             type: f.type,
             required: f.required,
             options: f.options || [],
+            checkboxOnValue: f.checkboxOnValue || "",
+            checkboxOffValue: f.checkboxOffValue || "",
+            dateFormat: f.dateFormat || "",
           })),
+          postScanScript: template.postScanScript || "",
+          scriptUrl: template.scriptUrl || "",
         }
       : {
           name: "",
-          fields: [{ name: "", description: "", type: "text" as FieldType, required: false }],
+          fields: [],
+          postScanScript: "",
+          scriptUrl: "",
         },
   });
 
@@ -97,15 +110,24 @@ export function TemplateEditor({
           options: f.options || [],
           checkboxOnValue: f.checkboxOnValue || "",
           checkboxOffValue: f.checkboxOffValue || "",
+          dateFormat: f.dateFormat || "",
         })),
+        postScanScript: template.postScanScript || "",
+        scriptUrl: template.scriptUrl || "",
       });
       setBarcodePosition(template.barcodePosition ?? 0);
+      setPostScanScript(template.postScanScript || "");
+      setScriptUrl(template.scriptUrl || "");
     } else {
       reset({
         name: "",
-        fields: [{ name: "", description: "", type: "text" as FieldType, required: false }],
+        fields: [],
+        postScanScript: "",
+        scriptUrl: "",
       });
       setBarcodePosition(0);
+      setPostScanScript("");
+      setScriptUrl("");
     }
   }, [template, reset]);
 
@@ -134,21 +156,26 @@ export function TemplateEditor({
         options: f.type === "dropdown" ? f.options : undefined,
         checkboxOnValue: f.type === "checkbox" ? f.checkboxOnValue : undefined,
         checkboxOffValue: f.type === "checkbox" ? f.checkboxOffValue : undefined,
+        dateFormat: f.type === "date" ? f.dateFormat || "YYYY-MM-DD" : undefined,
       })),
       barcodePosition: Math.max(0, Math.min(barcodePosition, data.fields.length)),
       createdAt: template?.createdAt || now,
       updatedAt: now,
+      postScanScript: postScanScript || undefined,
+      scriptUrl: scriptUrl || undefined,
     };
 
     onSave(savedTemplate);
     reset();
     setBarcodePosition(0);
+    setPostScanScript("");
+    setScriptUrl("");
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[860px]">
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
           <DialogHeader>
             <DialogTitle>{template ? "Edit Template" : "Create Template"}</DialogTitle>
@@ -166,7 +193,7 @@ export function TemplateEditor({
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Fields</Label>
+                <Label>Fields {fields.length === 0 && "(optional)"}</Label>
                 <Button
                   type="button"
                   variant="secondary"
@@ -179,6 +206,13 @@ export function TemplateEditor({
                   Add Field
                 </Button>
               </div>
+
+              {fields.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  No fields added yet. Templates can have zero fields if you only need the barcode
+                  or use a post-scan script.
+                </p>
+              )}
 
               {Array.from({ length: fields.length + 1 }).map((_, displayIndex) => {
                 // Determine if barcode placeholder should be shown at this position
@@ -244,7 +278,7 @@ export function TemplateEditor({
                         setBarcodePosition(barcodePosition + 1);
                       }
                     }}
-                    canRemove={fields.length > 1}
+                    canRemove={true}
                     setValue={setValue}
                     getValues={getValues}
                   />
@@ -252,6 +286,15 @@ export function TemplateEditor({
               })}
 
               {errors.fields && <FormError message={errors.fields.message} />}
+            </div>
+
+            <div className="space-y-4 border-t border-gray-200 pt-4">
+              <ScriptEditor
+                value={postScanScript}
+                onChange={setPostScanScript}
+                onUrlChange={setScriptUrl}
+                scriptUrl={scriptUrl}
+              />
             </div>
           </div>
 

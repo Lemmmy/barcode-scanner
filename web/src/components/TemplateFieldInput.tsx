@@ -1,13 +1,13 @@
+import dayjs from "dayjs";
 import { memo } from "react";
+import { Control, Controller, UseFormRegister } from "react-hook-form";
 import type { TemplateField } from "../types";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
-import { Select } from "./ui/Select";
 import { Checkbox } from "./ui/Checkbox";
+import { Select } from "./ui/Select";
 import { Label } from "./ui/Label";
 import { FormError } from "./ui/FormError";
-import type { UseFormRegister, Control } from "react-hook-form";
-import { Controller } from "react-hook-form";
 
 interface TemplateFieldInputProps {
   field: TemplateField;
@@ -82,6 +82,30 @@ function TemplateFieldInputComponent({ field, register, control, error }: Templa
               </option>
             ))}
           </Select>
+        );
+
+      case "date":
+        return (
+          <Controller
+            name={field.id}
+            control={control}
+            defaultValue={dayjs().format(field.dateFormat || "YYYY-MM-DD")}
+            rules={registerOptions}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                type="date"
+                value={value ? dayjs(value).format("YYYY-MM-DD") : ""}
+                onChange={(e) => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    onChange(dayjs(dateValue).format(field.dateFormat || "YYYY-MM-DD"));
+                  } else {
+                    onChange("");
+                  }
+                }}
+              />
+            )}
+          />
         );
 
       default:

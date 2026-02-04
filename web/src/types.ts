@@ -12,7 +12,7 @@ export interface ScannedCode {
   fieldOrder?: string[];
 }
 
-export type FieldType = "text" | "textarea" | "number" | "checkbox" | "dropdown";
+export type FieldType = "text" | "textarea" | "number" | "checkbox" | "dropdown" | "date";
 
 export interface TemplateField {
   id: string;
@@ -23,6 +23,13 @@ export interface TemplateField {
   options?: string[]; // For dropdown type
   checkboxOnValue?: string; // For checkbox type (default: "yes")
   checkboxOffValue?: string; // For checkbox type (default: "no")
+  dateFormat?: string; // For date fields - dayjs format string (default: "YYYY-MM-DD")
+}
+
+export interface ScannedCodeInfo {
+  code: string;
+  timestamp: number;
+  format?: string;
 }
 
 export interface DataEntryTemplate {
@@ -32,6 +39,8 @@ export interface DataEntryTemplate {
   barcodePosition: number; // Index where barcode should appear in field order (0 = first)
   createdAt: number;
   updatedAt: number;
+  postScanScript?: string; // JavaScript code to execute after scan
+  scriptUrl?: string; // URL to fetch script from
 }
 
 export interface ConnectionStatus {
@@ -50,4 +59,5 @@ export interface AppSettings {
   relayServerUrl: string;
   autoDiscoverRooms: boolean;
   ignoreTildePrefix: boolean;
+  disableJavaScriptExecution: boolean;
 }

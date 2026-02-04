@@ -40,6 +40,13 @@ export function SettingsFlyout({ isOpen, onClose }: SettingsFlyoutProps) {
     });
   };
 
+  const handleDisableJavaScriptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      disableJavaScriptExecution: e.target.checked,
+    });
+  };
+
   return (
     <>
       <div
@@ -114,6 +121,22 @@ export function SettingsFlyout({ isOpen, onClose }: SettingsFlyoutProps) {
             </div>
             <p className="text-xs text-gray-500">
               Strip leading tilde characters from scanned barcodes (Send Mode only)
+            </p>
+
+            <div className="flex items-center gap-2">
+              <input
+                id="disableJavaScriptExecution"
+                type="checkbox"
+                checked={settings.disableJavaScriptExecution}
+                onChange={handleDisableJavaScriptChange}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <Label htmlFor="disableJavaScriptExecution" className="font-normal">
+                Disable JavaScript execution in templates
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Prevent all post-scan scripts from running (Send Mode only)
             </p>
           </div>
         </div>

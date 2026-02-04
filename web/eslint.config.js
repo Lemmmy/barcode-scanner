@@ -20,6 +20,7 @@ export default tseslint.config(
     rules: {
       "@stylistic/semi": ["error", "always"],
       "@stylistic/quotes": ["error", "double", { avoidEscape: true }],
+      "@typescript-eslint/no-implied-eval": "off", // Allow Function constructor for user scripts
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },

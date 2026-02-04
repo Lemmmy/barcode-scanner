@@ -47,7 +47,20 @@ export function SendModeKeyboard({ onBarcodeDetected }: SendModeKeyboardProps) {
     const listener = () => {
       const el = document.activeElement?.tagName?.toLowerCase();
       if (!el || !ignoreEls.has(el)) {
-        inputRef.current?.focus();
+        // Check if active element or any parent has monaco-editor class
+        let element = document.activeElement;
+        let isInMonaco = false;
+        while (element) {
+          if (element.classList?.contains("monaco-editor")) {
+            isInMonaco = true;
+            break;
+          }
+          element = element.parentElement;
+        }
+
+        if (!isInMonaco) {
+          inputRef.current?.focus();
+        }
       }
     };
 

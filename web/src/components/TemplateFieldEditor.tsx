@@ -19,6 +19,7 @@ interface TemplateFormData {
     options?: string[];
     checkboxOnValue?: string;
     checkboxOffValue?: string;
+    dateFormat?: string;
   }>;
 }
 
@@ -134,11 +135,15 @@ export function TemplateFieldEditor({
               <Label>Field Type</Label>
               <Select {...register(`fields.${index}.type`)}>
                 <option value="text">Single-line Text</option>
-                <option value="textarea">Multi-line Text</option>
                 <option value="number">Number</option>
+                <option value="textarea">Text Area</option>
                 <option value="checkbox">Checkbox</option>
                 <option value="dropdown">Dropdown</option>
+                <option value="date">Date</option>
               </Select>
+              {errors.fields?.[index]?.type && (
+                <FormError message={errors.fields[index]?.type?.message} />
+              )}
             </div>
           </div>
 
@@ -224,6 +229,20 @@ export function TemplateFieldEditor({
                   {...register(`fields.${index}.checkboxOffValue`)}
                 />
               </div>
+            </div>
+          )}
+
+          {fieldType === "date" && (
+            <div className="space-y-2">
+              <Label htmlFor={`fields.${index}.dateFormat`}>Date Format</Label>
+              <Input
+                id={`fields.${index}.dateFormat`}
+                {...register(`fields.${index}.dateFormat` as const)}
+                placeholder="YYYY-MM-DD"
+              />
+              <p className="text-xs text-gray-500">
+                Use dayjs format tokens (e.g., YYYY-MM-DD, DD/MM/YYYY, MM-DD-YYYY)
+              </p>
             </div>
           )}
         </div>

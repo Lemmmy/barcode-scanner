@@ -18,6 +18,7 @@ interface DataEntryDialogProps {
   template: DataEntryTemplate;
   scannedCode: string;
   onSubmit: (data: Record<string, unknown>) => void;
+  prePopulatedData?: Record<string, unknown> | null;
 }
 
 export function DataEntryDialog({
@@ -26,6 +27,7 @@ export function DataEntryDialog({
   template,
   scannedCode,
   onSubmit,
+  prePopulatedData,
 }: DataEntryDialogProps) {
   const {
     register,
@@ -37,10 +39,14 @@ export function DataEntryDialog({
 
   useEffect(() => {
     if (open) {
-      // Reset form when dialog opens
-      reset({});
+      // Reset form with pre-populated data if available
+      if (prePopulatedData) {
+        reset(prePopulatedData);
+      } else {
+        reset({});
+      }
     }
-  }, [open, reset]);
+  }, [open, reset, prePopulatedData]);
 
   const validateAndSubmit = (formData: Record<string, unknown>) => {
     // Transform data to use field names instead of IDs

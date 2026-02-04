@@ -1,4 +1,5 @@
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useSocketConnection } from "../hooks/useSocketConnection";
@@ -12,11 +13,13 @@ import { SendModeKeyboard } from "./SendModeKeyboard";
 import { SendModeControls } from "./SendModeControls";
 import { SendModeHeader } from "./SendModeHeader";
 import { TemplateImportDialog } from "./TemplateImportDialog";
+import type { ScannedCodeInfo } from "../types";
 
 export default function SendMode() {
   const [isScanning, setIsScanning] = useState(true);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const [prePopulatedData, setPrePopulatedData] = useState<Record<string, unknown> | null>(null);
 
   const isDesktop = useMediaQuery("(min-width: 512px)");
 
@@ -59,12 +62,104 @@ export default function SendMode() {
     // Check if template is active
     const activeTemplate = templates.find((t) => t.id === activeTemplateId);
     if (activeTemplate) {
-      // Show data entry dialog
-      setPendingCode(processedCode);
-      if (!isMuted) {
-        playBeep();
+      // Execute post-scan script if present and JS execution is enabled
+      if (activeTemplate.postScanScript && !settings.disableJavaScriptExecution) {
+        try {
+          // Create initial form data with default values using field names
+          const formDataRaw: Record<string, unknown> = {};
+          const validFieldNames = new Set<string>();
+
+          activeTemplate.fields.forEach((field) => {
+            validFieldNames.add(field.name);
+            if (field.type === "checkbox") {
+              formDataRaw[field.name] = false;
+            } else if (field.type === "date") {
+              formDataRaw[field.name] = dayjs().format(field.dateFormat || "YYYY-MM-DD");
+            } else {
+              formDataRaw[field.name] = "";
+            }
+          });
+
+          // Wrap formData in a Proxy to warn on writes to non-existent fields
+          const formData = new Proxy(formDataRaw, {
+            set(target, property, value) {
+              if (typeof property === "string" && !validFieldNames.has(property)) {
+                console.warn(
+                  `Warning: Setting field "${property}" which does not exist in template. ` +
+                    `Valid field names: ${Array.from(validFieldNames).join(", ")}`,
+                );
+              }
+              target[property as string] = value;
+              return true;
+            },
+          });
+
+          // Create scanned code info
+          const info: ScannedCodeInfo = {
+            code: processedCode,
+            timestamp: Date.now(),
+            format: undefined, // Could be populated if barcode format detection is added
+          };
+
+          // Execute the script
+          const scriptFunction = new Function(
+            "code",
+            "info",
+            "formData",
+            `return (async () => { ${activeTemplate.postScanScript} })();`,
+          );
+
+          // Run the script and handle the promise
+          Promise.resolve(scriptFunction(processedCode, info, formData))
+            .then(() => {
+              // Script executed successfully, use modified formData
+              // Convert from field names back to field IDs for internal use
+              const formDataById: Record<string, unknown> = {};
+              activeTemplate.fields.forEach((field) => {
+                if (field.name in formDataRaw) {
+                  formDataById[field.id] = formDataRaw[field.name];
+                }
+              });
+              setPrePopulatedData(formDataById);
+              setPendingCode(processedCode);
+              if (!isMuted) {
+                playBeep();
+              }
+              setLastScannedCode(processedCode);
+            })
+            .catch((error) => {
+              console.error("Post-scan script error:", error);
+              alert(`Script execution error: ${error.message}`);
+              // Still show dialog with default values
+              setPrePopulatedData(null);
+              setPendingCode(processedCode);
+              if (!isMuted) {
+                playBeep();
+              }
+              setLastScannedCode(processedCode);
+            });
+        } catch (error) {
+          console.error("Post-scan script compilation error:", error);
+          alert(
+            `Script compilation error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+          // Still show dialog with default values
+          setPrePopulatedData(null);
+          setPendingCode(processedCode);
+          if (!isMuted) {
+            playBeep();
+          }
+          setLastScannedCode(processedCode);
+        }
+      } else {
+        // No script or JS disabled, show dialog normally
+        setPrePopulatedData(null);
+        setPendingCode(processedCode);
+        if (!isMuted) {
+          playBeep();
+        }
+        setLastScannedCode(processedCode);
       }
-      setLastScannedCode(processedCode);
       return;
     }
 
@@ -119,8 +214,9 @@ export default function SendMode() {
       });
 
       setPendingCode(null);
+      setPrePopulatedData(null);
     },
-    [pendingCode],
+    [pendingCode, setPrePopulatedData],
   );
 
   const handleImportTemplate = useCallback(() => {
@@ -173,13 +269,19 @@ export default function SendMode() {
         {isDesktop && sendModeControls}
       </div>
 
-      {pendingCode && activeTemplateId && (
+      {pendingCode && activeTemplateId && templates.find((t) => t.id === activeTemplateId) && (
         <DataEntryDialog
-          open={true}
-          onOpenChange={(open) => !open && setPendingCode(null)}
+          open={!!pendingCode && !!templates.find((t) => t.id === activeTemplateId)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPendingCode(null);
+              setPrePopulatedData(null);
+            }
+          }}
           template={templates.find((t) => t.id === activeTemplateId)!}
-          scannedCode={pendingCode}
+          scannedCode={pendingCode || ""}
           onSubmit={handleDataEntrySubmit}
+          prePopulatedData={prePopulatedData}
         />
       )}
       {incomingTemplate && (
