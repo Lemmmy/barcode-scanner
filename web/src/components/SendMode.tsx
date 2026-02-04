@@ -1,38 +1,44 @@
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
-import { useCamera } from "../hooks/useCamera";
 import { useSocketConnection } from "../hooks/useSocketConnection";
 import { playBeep } from "../lib/audio";
 import { generateId } from "../lib/utils";
 import { useAppStore } from "../store/useAppStore";
 import { DataEntryDialog } from "./DataEntryDialog";
 import { DebugConsole } from "./DebugConsole";
+import { SendModeCamera } from "./SendModeCamera";
+import { SendModeKeyboard } from "./SendModeKeyboard";
 import { SendModeControls } from "./SendModeControls";
 import { SendModeHeader } from "./SendModeHeader";
 import { TemplateImportDialog } from "./TemplateImportDialog";
 
 export default function SendMode() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(true);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
 
   const isDesktop = useMediaQuery("(min-width: 512px)");
 
-  const { reset, templates, activeTemplateId, connectionStatus } = useAppStore(
+  const {
+    templates,
+    activeTemplateId,
+    connectionStatus,
+    incomingTemplate,
+    setIncomingTemplate,
+    scanMode,
+  } = useAppStore(
     useShallow((state) => ({
-      reset: state.reset,
       templates: state.templates,
       activeTemplateId: state.activeTemplateId,
       connectionStatus: state.connectionStatus,
+      incomingTemplate: state.incomingTemplate,
+      setIncomingTemplate: state.setIncomingTemplate,
+      scanMode: state.scanMode,
     })),
   );
 
-  const { cameraError } = useCamera({ videoRef, key: connectionStatus.roomCode });
-  const { incomingTemplate, setIncomingTemplate } = useSocketConnection();
+  useSocketConnection();
 
   // Stable callback that accesses store state directly
   const handleBarcodeDetected = useCallback((code: string) => {
@@ -129,27 +135,6 @@ export default function SendMode() {
     setIncomingTemplate(null);
   }, [incomingTemplate]);
 
-  useBarcodeScanner({
-    videoRef,
-    canvasRef,
-    isScanning,
-    onBarcodeDetected: handleBarcodeDetected,
-  });
-
-  if (cameraError) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-6 text-white">
-        <p className="mb-4 text-center text-lg">{cameraError}</p>
-        <button
-          onClick={reset}
-          className="rounded-lg bg-white px-6 py-3 font-semibold text-gray-900 transition-colors hover:bg-gray-100"
-        >
-          Go Back
-        </button>
-      </div>
-    );
-  }
-
   const sendModeControls = (
     <SendModeControls
       lastScannedCode={lastScannedCode}
@@ -160,24 +145,24 @@ export default function SendMode() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      {scanMode === "camera" ? (
+        <SendModeCamera
+          roomCode={connectionStatus.roomCode}
+          onBarcodeDetected={handleBarcodeDetected}
+          isScanning={isScanning}
+        />
+      ) : (
+        <SendModeKeyboard onBarcodeDetected={handleBarcodeDetected} />
+      )}
 
-      <canvas ref={canvasRef} className="hidden" />
-
-      <div className="absolute inset-0 flex flex-col">
+      <div className="absolute inset-0 flex flex-col pointer-events-none [&_*]:pointer-events-auto">
         <SendModeHeader />
 
         {/* Controls: at the top for mobile, bottom for desktop */}
         {!isDesktop && sendModeControls}
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1 !pointer-events-none" />
 
         {isDesktop && sendModeControls}
       </div>

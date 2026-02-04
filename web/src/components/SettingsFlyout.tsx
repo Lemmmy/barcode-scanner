@@ -31,7 +31,7 @@ export function SettingsFlyout({ isOpen, onClose }: SettingsFlyoutProps) {
       <div
         className={cn(
           "fixed inset-0 z-40 bg-black/50 transition-opacity",
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          isOpen ? "opacity-100" : "!pointer-events-none opacity-0",
         )}
         onClick={onClose}
       />

@@ -1,7 +1,7 @@
 import { useAppStore } from "@/store/useAppStore";
 import { DataEntryTemplate } from "@/types";
 import clsx from "clsx";
-import { FileText, List, Pause, Play } from "lucide-react";
+import { Camera, FileText, Keyboard, List, Pause, Play } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { LastScannedCode } from "./LastScannedCode";
@@ -22,10 +22,12 @@ export function SendModeControls({
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
 
-  const { activeTemplateId, activeTemplateName } = useAppStore(
+  const { activeTemplateId, activeTemplateName, scanMode, setScanMode } = useAppStore(
     useShallow((state) => ({
       activeTemplateId: state.activeTemplateId,
       activeTemplateName: state.templates.find((t) => t.id === state.activeTemplateId)?.name,
+      scanMode: state.scanMode,
+      setScanMode: state.setScanMode,
     })),
   );
 
@@ -41,7 +43,7 @@ export function SendModeControls({
 
   return (
     <>
-      <div className="space-y-2 px-4 xs:py-4 flex flex-col items-center w-full">
+      <div className="space-y-2 px-4 xs:py-4 flex flex-col items-center w-full pointer-events-auto">
         <LastScannedCode code={lastScannedCode} />
 
         <div className="flex justify-center gap-3 w-full xs:max-w-[360px] md:max-w-[480px]">
@@ -56,6 +58,23 @@ export function SendModeControls({
             title={isScanning ? "Pause Scanning" : "Resume Scanning"}
           >
             {isScanning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </button>
+
+          {/* Mode Toggle Button */}
+          <button
+            onClick={() => setScanMode(scanMode === "camera" ? "keyboard" : "camera")}
+            className={clsx(
+              "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
+              "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
+            )}
+            aria-label={scanMode === "camera" ? "Switch to Keyboard" : "Switch to Camera"}
+            title={scanMode === "camera" ? "Switch to Keyboard" : "Switch to Camera"}
+          >
+            {scanMode === "camera" ? (
+              <Keyboard className="h-5 w-5" />
+            ) : (
+              <Camera className="h-5 w-5" />
+            )}
           </button>
 
           {/* Template Button */}

@@ -8,6 +8,7 @@ import type {
   AutoTypeSettings,
   AppSettings,
   DataEntryTemplate,
+  ScanMode,
 } from "../types";
 import type { CSVExportOptions } from "../lib/csv";
 import { TypedSocket } from "@/lib/socket";
@@ -25,6 +26,8 @@ interface AppState {
   exportPreferences: CSVExportOptions;
   templates: DataEntryTemplate[];
   activeTemplateId: string | null;
+  incomingTemplate: DataEntryTemplate | null;
+  scanMode: ScanMode;
 
   setMode: (mode: AppMode) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
@@ -41,6 +44,8 @@ interface AppState {
   deleteTemplate: (id: string) => Promise<void>;
   loadTemplates: () => Promise<void>;
   setActiveTemplateId: (id: string | null) => void;
+  setIncomingTemplate: (template: DataEntryTemplate | null) => void;
+  setScanMode: (mode: ScanMode) => void;
   reset: () => void;
 }
 
@@ -71,6 +76,8 @@ export const useAppStore = create<AppState>()(
         },
         templates: [],
         activeTemplateId: null,
+        incomingTemplate: null,
+        scanMode: "camera",
 
         setMode: (mode) => set({ mode }),
 
@@ -134,6 +141,10 @@ export const useAppStore = create<AppState>()(
         },
         setActiveTemplateId: (id) => set({ activeTemplateId: id }),
 
+        setIncomingTemplate: (template) => set({ incomingTemplate: template }),
+
+        setScanMode: (mode) => set({ scanMode: mode }),
+
         reset: () =>
           set({
             mode: "landing",
@@ -149,6 +160,7 @@ export const useAppStore = create<AppState>()(
           exportPreferences: state.exportPreferences,
           activeTemplateId: state.activeTemplateId,
           isMuted: state.isMuted,
+          scanMode: state.scanMode,
         }),
       },
     ),

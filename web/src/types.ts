@@ -1,5 +1,7 @@
 export type AppMode = "landing" | "send" | "receive";
 
+export type ScanMode = "camera" | "keyboard";
+
 export interface ScannedCode {
   id: string;
   code: string;

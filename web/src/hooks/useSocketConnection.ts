@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { createSocket } from "../lib/socket";
 import { useShallow } from "zustand/react/shallow";
 import type { DataEntryTemplate } from "../types";
 
 export function useSocketConnection() {
-  const [incomingTemplate, setIncomingTemplate] = useState<DataEntryTemplate | null>(null);
-
-  const { connectionStatus, setConnectionStatus, setSocketRef, settings } = useAppStore(
-    useShallow((state) => ({
-      connectionStatus: state.connectionStatus,
-      setConnectionStatus: state.setConnectionStatus,
-      setSocketRef: state.setSocketRef,
-      settings: state.settings,
-    })),
-  );
+  const { connectionStatus, setConnectionStatus, setSocketRef, setIncomingTemplate, settings } =
+    useAppStore(
+      useShallow((state) => ({
+        connectionStatus: state.connectionStatus,
+        setConnectionStatus: state.setConnectionStatus,
+        setSocketRef: state.setSocketRef,
+        setIncomingTemplate: state.setIncomingTemplate,
+        settings: state.settings,
+      })),
+    );
 
   useEffect(() => {
     console.log("useSocketConnection: Creating socket");
@@ -55,7 +55,5 @@ export function useSocketConnection() {
       socket.disconnect();
       setSocketRef(null);
     };
-  }, [setConnectionStatus, setSocketRef]);
-
-  return { incomingTemplate, setIncomingTemplate };
+  }, [setConnectionStatus, setSocketRef, setIncomingTemplate, settings.relayServerUrl]);
 }

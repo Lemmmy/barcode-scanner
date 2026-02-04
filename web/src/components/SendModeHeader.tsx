@@ -32,7 +32,7 @@ export function SendModeHeader() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between p-4 pointer-events-auto">
         <button
           onClick={reset}
           className="rounded-lg bg-black/50 p-3 text-white backdrop-blur-sm transition-colors hover:bg-black/60 active:bg-black/70"
