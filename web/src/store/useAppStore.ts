@@ -19,7 +19,6 @@ interface AppState {
   connectionStatus: ConnectionStatus;
   scannedCodes: ScannedCode[];
   isMuted: boolean;
-  isLogOpen: boolean;
   socketRef: TypedSocket | null;
   autoTypeSettings: AutoTypeSettings;
   settings: AppSettings;
@@ -33,7 +32,6 @@ interface AppState {
   loadScannedCodes: () => Promise<void>;
   clearScannedCodes: () => Promise<void>;
   toggleMute: () => void;
-  setLogOpen: (open: boolean) => void;
   setSocketRef: (socket: TypedSocket | null) => void;
   setAutoTypeSettings: (settings: AutoTypeSettings) => void;
   setSettings: (settings: AppSettings) => void;
@@ -54,7 +52,6 @@ export const useAppStore = create<AppState>()(
         connectionStatus: { connected: false, roomCode: null },
         scannedCodes: [],
         isMuted: false,
-        isLogOpen: false,
         socketRef: null,
         autoTypeSettings: {
           enabled: false,
@@ -96,8 +93,6 @@ export const useAppStore = create<AppState>()(
         },
 
         toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
-
-        setLogOpen: (open) => set({ isLogOpen: open }),
 
         setSocketRef: (socket) => set({ socketRef: socket }),
 
@@ -143,7 +138,6 @@ export const useAppStore = create<AppState>()(
           set({
             mode: "landing",
             connectionStatus: { connected: false, roomCode: null },
-            isLogOpen: false,
             socketRef: null,
           }),
       }),

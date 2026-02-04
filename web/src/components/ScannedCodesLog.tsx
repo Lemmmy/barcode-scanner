@@ -10,6 +10,7 @@ import { DateGroup } from "./DateGroup";
 import { PaginationControls } from "./PaginationControls";
 import { groupByDate } from "../lib/dateUtils";
 import { cn } from "../lib/utils";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import {
   generateCSV,
   downloadCSV,
@@ -38,15 +39,7 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(0);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  // Check if desktop on mount
-  useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 512);
-    checkDesktop();
-    window.addEventListener("resize", checkDesktop);
-    return () => window.removeEventListener("resize", checkDesktop);
-  }, []);
+  const isDesktop = useMediaQuery("(min-width: 512px)");
 
   const groupedCodes = useMemo(() => {
     const groups = groupByDate(scannedCodes);

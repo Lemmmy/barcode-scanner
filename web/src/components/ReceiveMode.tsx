@@ -26,7 +26,7 @@ interface RoomCodeForm {
 export default function ReceiveMode() {
   const socketRef = useRef<TypedSocket | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isElectron, setIsElectron] = useState(!!window.electronAPI);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [incomingTemplate, setIncomingTemplate] = useState<DataEntryTemplate | null>(null);
@@ -71,7 +71,7 @@ export default function ReceiveMode() {
   // Check if running in Electron
   useEffect(() => {
     if (window.electronAPI) {
-      setIsDesktop(true);
+      setIsElectron(true);
     }
   }, []);
 
@@ -265,12 +265,13 @@ export default function ReceiveMode() {
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       <div className="flex items-center justify-between border-b border-gray-200 bg-white p-4">
-        {!isDesktop ? (
+        {!isElectron ? (
           <button
             onClick={handleBack}
             className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
+            aria-label="Back to landing"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
         ) : (
           <div className="w-10" />
@@ -285,7 +286,7 @@ export default function ReceiveMode() {
         </div>
 
         <div className="flex items-center gap-2">
-          {isDesktop && <AutoTypeSettings />}
+          {isElectron && <AutoTypeSettings />}
           <button
             onClick={() => setIsTemplateManagerOpen(true)}
             className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"

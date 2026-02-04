@@ -1,43 +1,35 @@
-import { useRef, useState, useCallback } from "react";
-import { List, Pause, Play, FileText } from "lucide-react";
-import { useAppStore } from "../store/useAppStore";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useCallback, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
+import { useCamera } from "../hooks/useCamera";
+import { useSocketConnection } from "../hooks/useSocketConnection";
 import { playBeep } from "../lib/audio";
 import { generateId } from "../lib/utils";
-import ScannedCodesLog from "./ScannedCodesLog";
-import { SettingsFlyout } from "./SettingsFlyout";
-import { useShallow } from "zustand/react/shallow";
-import { SendModeHeader } from "./SendModeHeader";
-import { useCamera } from "../hooks/useCamera";
-import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
-import { useSocketConnection } from "../hooks/useSocketConnection";
-import { DebugConsole } from "./DebugConsole";
-import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
+import { useAppStore } from "../store/useAppStore";
 import { DataEntryDialog } from "./DataEntryDialog";
+import { DebugConsole } from "./DebugConsole";
+import { SendModeControls } from "./SendModeControls";
+import { SendModeHeader } from "./SendModeHeader";
 import { TemplateImportDialog } from "./TemplateImportDialog";
-import type { DataEntryTemplate } from "../types";
-import clsx from "clsx";
 
 export default function SendMode() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(true);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
-  const [showFlash, setShowFlash] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
 
-  const { isLogOpen, setLogOpen, reset, templates, activeTemplateId, connectionStatus } =
-    useAppStore(
-      useShallow((state) => ({
-        isLogOpen: state.isLogOpen,
-        setLogOpen: state.setLogOpen,
-        reset: state.reset,
-        templates: state.templates,
-        activeTemplateId: state.activeTemplateId,
-        connectionStatus: state.connectionStatus,
-      })),
-    );
+  const isDesktop = useMediaQuery("(min-width: 512px)");
+
+  const { reset, templates, activeTemplateId, connectionStatus } = useAppStore(
+    useShallow((state) => ({
+      reset: state.reset,
+      templates: state.templates,
+      activeTemplateId: state.activeTemplateId,
+      connectionStatus: state.connectionStatus,
+    })),
+  );
 
   const { cameraError } = useCamera({ videoRef, key: connectionStatus.roomCode });
   const { incomingTemplate, setIncomingTemplate } = useSocketConnection();
@@ -67,8 +59,6 @@ export default function SendMode() {
         playBeep();
       }
       setLastScannedCode(code);
-      setShowFlash(true);
-      setTimeout(() => setShowFlash(false), 750);
       return;
     }
 
@@ -87,8 +77,6 @@ export default function SendMode() {
 
     // Update last scanned code and trigger flash animation
     setLastScannedCode(code);
-    setShowFlash(true);
-    setTimeout(() => setShowFlash(false), 750);
   }, []);
 
   const handleDataEntrySubmit = useCallback(
@@ -129,16 +117,6 @@ export default function SendMode() {
     [pendingCode],
   );
 
-  const handleShareTemplate = useCallback((template: DataEntryTemplate) => {
-    const { socketRef } = useAppStore.getState();
-    if (socketRef?.connected) {
-      console.log("Sharing template with room:", template.name);
-      socketRef.emit("shareTemplate", template);
-    } else {
-      console.warn("Cannot share template: not connected to room");
-    }
-  }, []);
-
   const handleImportTemplate = useCallback(() => {
     if (!incomingTemplate) return;
     const { addTemplate, updateTemplate, templates } = useAppStore.getState();
@@ -178,6 +156,14 @@ export default function SendMode() {
     );
   }
 
+  const sendModeControls = (
+    <SendModeControls
+      lastScannedCode={lastScannedCode}
+      isScanning={isScanning}
+      setIsScanning={setIsScanning}
+    />
+  );
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       <video
@@ -191,86 +177,17 @@ export default function SendMode() {
       <canvas ref={canvasRef} className="hidden" />
 
       <div className="absolute inset-0 flex flex-col">
-        <SendModeHeader onSettingsClick={() => setIsSettingsOpen(true)} />
+        <SendModeHeader />
 
+        {/* Controls: at the top for mobile, bottom for desktop */}
+        {!isDesktop && sendModeControls}
+
+        {/* Spacer */}
         <div className="flex-1" />
 
-        <div className="space-y-3 p-4 flex flex-col items-center w-full">
-          {lastScannedCode && (
-            <div
-              className={clsx(
-                "overflow-hidden rounded-lg px-4 py-3 max-w-[360px] text-center font-mono text-sm font-semibold",
-                "backdrop-blur-sm transition-colors",
-                showFlash
-                  ? "bg-green-500/20 text-green-200 opacity-100"
-                  : "opacity-80 bg-black/50 text-white",
-              )}
-            >
-              <div className="truncate whitespace-nowrap">{lastScannedCode}</div>
-            </div>
-          )}
-          <div className="flex justify-center gap-3 w-full max-w-[360px]">
-            <button
-              onClick={() => setIsScanning(!isScanning)}
-              className={clsx(
-                "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
-                "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
-              )}
-            >
-              {isScanning ? (
-                <>
-                  <Pause className="h-5 w-5" />
-                  <span>Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-5 w-5" />
-                  <span>Resume</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setIsTemplateSelectorOpen(true)}
-              className={clsx(
-                "flex flex-col items-center rounded-lg px-4 py-3 font-semibold min-w-0",
-                "backdrop-blur-sm transition-colors text-center",
-                activeTemplateId
-                  ? "bg-blue-500/80 text-white hover:bg-blue-500/90 active:bg-blue-600/90"
-                  : "bg-white/10 text-white hover:bg-white/20 active:bg-white/30",
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                <span>Template</span>
-              </span>
-              {activeTemplateId && (
-                <span className="text-center text-xs text-white/80 truncate w-full">
-                  {templates.find((t) => t.id === activeTemplateId)?.name}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setLogOpen(true)}
-              className={clsx(
-                "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
-                "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
-              )}
-            >
-              <List className="h-5 w-5" />
-              <span>Log</span>
-            </button>
-          </div>
-        </div>
+        {isDesktop && sendModeControls}
       </div>
 
-      <ScannedCodesLog isOpen={isLogOpen} onClose={() => setLogOpen(false)} />
-      <SettingsFlyout isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <TemplateManagerFlyout
-        isOpen={isTemplateSelectorOpen}
-        onClose={() => setIsTemplateSelectorOpen(false)}
-        mode="send"
-        onShareTemplate={handleShareTemplate}
-      />
       {pendingCode && activeTemplateId && (
         <DataEntryDialog
           open={true}
