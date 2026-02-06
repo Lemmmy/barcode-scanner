@@ -40,6 +40,11 @@ export function generateCSV(codes: ScannedCode[], options: CSVExportOptions): st
       }
     });
     fieldNames = Array.from(templateFields).sort();
+
+    // If no template fields found, at least include the barcode
+    if (fieldNames.length === 0) {
+      fieldNames = ["__barcode"];
+    }
   }
 
   let csv = "";
