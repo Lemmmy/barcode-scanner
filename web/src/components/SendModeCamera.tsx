@@ -1,23 +1,33 @@
 import { useRef } from "react";
-import { useCamera } from "../hooks/useCamera";
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
+import { useCamera } from "../hooks/useCamera";
 
 interface SendModeCameraProps {
   roomCode: string | null;
-  isScanning: boolean;
+  isScanningEnabled: boolean;
+  isScanningLockedByDataEntry: boolean;
   onBarcodeDetected: (code: string) => void;
 }
 
-export function SendModeCamera({ roomCode, isScanning, onBarcodeDetected }: SendModeCameraProps) {
+export function SendModeCamera({
+  roomCode,
+  isScanningEnabled,
+  isScanningLockedByDataEntry,
+  onBarcodeDetected,
+}: SendModeCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const isScanningLockedByNotHeldRef = useRef(false);
 
   const { cameraError } = useCamera({ videoRef, key: roomCode });
 
   useBarcodeScanner({
     videoRef,
     canvasRef,
-    isScanning,
+    isScanningEnabled,
+    isScanningLockedByDataEntry,
+    isScanningLockedByNotHeldRef,
     onBarcodeDetected,
   });
 

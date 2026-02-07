@@ -38,15 +38,6 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
   return (
     <>
       <div className="flex justify-center gap-2 w-full xs:max-w-[360px] md:max-w-[480px]">
-        {/* Pause Button */}
-        <SendControlButton
-          onClick={() => setIsScanning(!isScanning)}
-          aria-label={isScanning ? "Pause Scanning" : "Resume Scanning"}
-          title={isScanning ? "Pause Scanning" : "Resume Scanning"}
-        >
-          {isScanning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-        </SendControlButton>
-
         {/* Mode Toggle Button */}
         <SendControlButton
           onClick={() => setScanMode(scanMode === "camera" ? "keyboard" : "camera")}
@@ -58,6 +49,15 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
           ) : (
             <Camera className="h-5 w-5" />
           )}
+        </SendControlButton>
+
+        {/* Pause Button */}
+        <SendControlButton
+          onClick={() => setIsScanning(!isScanning)}
+          aria-label={isScanning ? "Pause Scanning" : "Resume Scanning"}
+          title={isScanning ? "Pause Scanning" : "Resume Scanning"}
+        >
+          {isScanning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </SendControlButton>
 
         {/* Template Button */}

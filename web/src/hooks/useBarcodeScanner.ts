@@ -7,14 +7,18 @@ export const SCAN_COOLDOWN_MS = 5000;
 interface UseBarcodeScannerOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  isScanning: boolean;
+  isScanningEnabled: boolean;
+  isScanningLockedByDataEntry: boolean;
+  isScanningLockedByNotHeldRef: React.RefObject<boolean>;
   onBarcodeDetected: (code: string) => void;
 }
 
 export function useBarcodeScanner({
   videoRef,
   canvasRef,
-  isScanning,
+  isScanningEnabled,
+  isScanningLockedByDataEntry,
+  isScanningLockedByNotHeldRef,
   onBarcodeDetected,
 }: UseBarcodeScannerOptions) {
   const barcodeDetectorRef = useRef<BarcodeDetector | null>(null);
@@ -24,12 +28,16 @@ export function useBarcodeScanner({
   const verificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScannedCodeRef = useRef<string | null>(null);
   const lastScannedTimeRef = useRef<number>(0);
+
+  const isScanningEnabledRef = useRef(isScanningEnabled);
+  const isScanningLockedByDataEntryRef = useRef(isScanningLockedByDataEntry);
   const onBarcodeDetectedRef = useRef(onBarcodeDetected);
 
-  // Always keep the ref updated with the latest callback
   useEffect(() => {
+    isScanningEnabledRef.current = isScanningEnabled;
+    isScanningLockedByDataEntryRef.current = isScanningLockedByDataEntry;
     onBarcodeDetectedRef.current = onBarcodeDetected;
-  }, [onBarcodeDetected]);
+  }, [isScanningEnabled, isScanningLockedByDataEntry, onBarcodeDetected]);
 
   const verifyAndSendBarcode = useCallback(
     async (codeToVerify: string) => {
@@ -49,7 +57,7 @@ export function useBarcodeScanner({
         const barcodes = await barcodeDetectorRef.current.detect(canvas);
         if (barcodes.length > 0) {
           const verifiedCode = barcodes[0].rawValue;
-          console.log("Verification scan:", verifiedCode, "expected:", codeToVerify);
+          // console.log("Verification scan:", verifiedCode, "expected:", codeToVerify);
           if (verifiedCode === codeToVerify) {
             // Check cooldown: if same code was scanned less than 5s ago, skip
             const now = Date.now();
@@ -57,12 +65,12 @@ export function useBarcodeScanner({
               lastScannedCodeRef.current === verifiedCode &&
               now - lastScannedTimeRef.current < SCAN_COOLDOWN_MS
             ) {
-              console.log("Scan cooldown active, skipping");
+              // console.log("Scan cooldown active, skipping");
               pendingCodeRef.current = null;
               return;
             }
 
-            console.log("Code verified, sending:", verifiedCode);
+            // console.log("Code verified, sending:", verifiedCode);
             lastScannedCodeRef.current = verifiedCode;
             lastScannedTimeRef.current = now;
             onBarcodeDetectedRef.current(verifiedCode);
@@ -84,8 +92,18 @@ export function useBarcodeScanner({
   );
 
   const scanBarcode = useCallback(async () => {
-    if (!isScanning || !videoRef.current || !canvasRef.current || !barcodeDetectorRef.current)
+    if (
+      !isScanningEnabledRef.current ||
+      isScanningLockedByDataEntryRef.current ||
+      isScanningLockedByNotHeldRef.current ||
+      !videoRef.current ||
+      !canvasRef.current ||
+      !barcodeDetectorRef.current
+    ) {
+      // Even if we're not scanning, continue to queue animation frames in case scanning is re-enabled later
+      animationFrameRef.current = requestAnimationFrame(() => void scanBarcode());
       return;
+    }
 
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTimeRef.current;
@@ -113,17 +131,17 @@ export function useBarcodeScanner({
       const barcodes = await barcodeDetectorRef.current.detect(canvas);
       if (barcodes.length > 0) {
         const code = barcodes[0].rawValue;
-        console.log(
-          "Barcode detected:",
-          code,
-          "format:",
-          barcodes[0].format,
-          "pending:",
-          pendingCodeRef.current,
-        );
+        // console.log(
+        //   "Barcode detected:",
+        //   code,
+        //   "format:",
+        //   barcodes[0].format,
+        //   "pending:",
+        //   pendingCodeRef.current,
+        // );
 
         if (code && code !== pendingCodeRef.current) {
-          console.log("New code detected, scheduling verification in", SCAN_INTERVAL_MS / 2, "ms");
+          // console.log("New code detected, scheduling verification in", SCAN_INTERVAL_MS / 2, "ms");
           pendingCodeRef.current = code;
 
           if (verificationTimeoutRef.current) {
@@ -147,7 +165,7 @@ export function useBarcodeScanner({
     }
 
     animationFrameRef.current = requestAnimationFrame(() => void scanBarcode());
-  }, [isScanning, videoRef, canvasRef, verifyAndSendBarcode]);
+  }, [videoRef, canvasRef, verifyAndSendBarcode]);
 
   useEffect(() => {
     let mounted = true;

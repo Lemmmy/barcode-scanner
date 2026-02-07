@@ -259,7 +259,8 @@ export default function SendMode() {
         <SendModeCamera
           roomCode={connectionStatus.roomCode}
           onBarcodeDetected={handleBarcodeDetected}
-          isScanning={isScanning}
+          isScanningEnabled={isScanning}
+          isScanningLockedByDataEntry={!!pendingCode && !!activeTemplate}
         />
       ) : (
         <SendModeKeyboard onBarcodeDetected={handleBarcodeDetected} />
