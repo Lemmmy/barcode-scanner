@@ -82,14 +82,19 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-gray-200 bg-white p-4 text-center">
-        <a
-          href="https://github.com/Lemmmy/barcode-scanner"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-gray-600 hover:text-gray-900"
-        >
-          View on GitHub
-        </a>
+        <div className="flex items-center justify-center gap-4">
+          <a
+            href="https://github.com/Lemmmy/barcode-scanner"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-gray-600 hover:text-gray-900"
+          >
+            View on GitHub
+          </a>
+          <span className="text-xs text-gray-500">
+            v{import.meta.env.VITE_APP_VERSION || "0.2.1"}
+          </span>
+        </div>
       </footer>
     </div>
   );

@@ -9,6 +9,8 @@
     "build": "tsc",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
+    "package:linux": "electron-builder --linux",
+    "package:mac": "electron-builder --mac",
     "start": "electron ."
   },
   "dependencies": {
@@ -46,6 +48,18 @@
         "portable"
       ],
       "icon": "icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
     }
   }
 }

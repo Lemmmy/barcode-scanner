@@ -1,0 +1,109 @@
+name: Build Electron Apps
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            platform: win
+            artifact: Barcode Scanner*.exe
+          - os: ubuntu-latest
+            platform: linux
+            artifact: Barcode Scanner*.AppImage
+          - os: macos-latest
+            platform: mac
+            artifact: Barcode Scanner*.dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build web app for Electron
+        run: |
+          cd web
+          pnpm run build:electron
+          cd ..
+
+      - name: Install Electron dependencies
+        run: |
+          cd electron
+          pnpm install
+          cd ..
+
+      - name: Build Electron main process
+        run: |
+          cd electron
+          pnpm run build
+          cd ..
+
+      - name: Package application (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd electron
+          pnpm run package:win
+          cd ..
+
+      - name: Package application (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd electron
+          pnpm run package:linux
+          cd ..
+
+      - name: Package application (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd electron
+          pnpm run package:mac
+          cd ..
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: barcode-scanner-${{ matrix.platform }}
+          path: electron/release/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
