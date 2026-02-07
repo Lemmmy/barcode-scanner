@@ -6,14 +6,15 @@ import { useSocketConnection } from "../hooks/useSocketConnection";
 import { playBeep } from "../lib/audio";
 import { generateId } from "../lib/utils";
 import { useAppStore } from "../store/useAppStore";
+import type { ScannedCodeInfo } from "../types";
 import { DataEntryDialog } from "./DataEntryDialog";
 import { DebugConsole } from "./DebugConsole";
+import { LastScannedCode } from "./LastScannedCode";
 import { SendModeCamera } from "./SendModeCamera";
-import { SendModeKeyboard } from "./SendModeKeyboard";
 import { SendModeControls } from "./SendModeControls";
 import { SendModeHeader } from "./SendModeHeader";
+import { SendModeKeyboard } from "./SendModeKeyboard";
 import { TemplateImportDialog } from "./TemplateImportDialog";
-import type { ScannedCodeInfo } from "../types";
 
 export default function SendMode() {
   const [isScanning, setIsScanning] = useState(true);
@@ -238,11 +239,7 @@ export default function SendMode() {
   }, [incomingTemplate]);
 
   const sendModeControls = (
-    <SendModeControls
-      lastScannedCode={lastScannedCode}
-      isScanning={isScanning}
-      setIsScanning={setIsScanning}
-    />
+    <SendModeControls isScanning={isScanning} setIsScanning={setIsScanning} />
   );
 
   return (
@@ -261,12 +258,22 @@ export default function SendMode() {
         <SendModeHeader />
 
         {/* Controls: at the top for mobile, bottom for desktop */}
-        {!isDesktop && sendModeControls}
+        {!isDesktop && (
+          <div className="space-y-2 px-4 xs:py-4 flex flex-col items-center w-full pointer-events-auto">
+            {sendModeControls}
+            <LastScannedCode code={lastScannedCode} />
+          </div>
+        )}
 
         {/* Spacer */}
         <div className="flex-1 !pointer-events-none" />
 
-        {isDesktop && sendModeControls}
+        {isDesktop && (
+          <div className="space-y-2 px-4 xs:py-4 flex flex-col items-center w-full pointer-events-auto">
+            <LastScannedCode code={lastScannedCode} />
+            {sendModeControls}
+          </div>
+        )}
       </div>
 
       {pendingCode && activeTemplateId && templates.find((t) => t.id === activeTemplateId) && (
