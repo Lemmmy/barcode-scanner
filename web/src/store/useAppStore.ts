@@ -72,6 +72,7 @@ export const useAppStore = create<AppState>()(
           disableJavaScriptExecution: false,
           showDebugConsole: false,
           holdToScan: false,
+          showFpsCounter: false,
         },
         exportPreferences: {
           includeHeader: true,

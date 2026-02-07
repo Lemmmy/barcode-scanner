@@ -62,4 +62,5 @@ export interface AppSettings {
   disableJavaScriptExecution: boolean;
   showDebugConsole: boolean;
   holdToScan: boolean;
+  showFpsCounter: boolean;
 }

@@ -11,6 +11,10 @@ interface UseBarcodeScannerOptions {
   isScanningLockedByDataEntry: boolean;
   isScanningLockedByNotHeldRef: React.RefObject<boolean>;
   onBarcodeDetected: (code: string) => void;
+  scanFpsRef?: React.RefObject<number>;
+  detectionFpsRef?: React.RefObject<number>;
+  detectTimeRef?: React.RefObject<number>;
+  videoFetchTimeRef?: React.RefObject<number>;
 }
 
 export function useBarcodeScanner({
@@ -20,6 +24,10 @@ export function useBarcodeScanner({
   isScanningLockedByDataEntry,
   isScanningLockedByNotHeldRef,
   onBarcodeDetected,
+  scanFpsRef,
+  detectionFpsRef,
+  detectTimeRef,
+  videoFetchTimeRef,
 }: UseBarcodeScannerOptions) {
   const barcodeDetectorRef = useRef<BarcodeDetector | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -28,6 +36,10 @@ export function useBarcodeScanner({
   const verificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScannedCodeRef = useRef<string | null>(null);
   const lastScannedTimeRef = useRef<number>(0);
+
+  // FPS tracking
+  const scanTimestampsRef = useRef<number[]>([]);
+  const detectionTimestampsRef = useRef<number[]>([]);
 
   const isScanningEnabledRef = useRef(isScanningEnabled);
   const isScanningLockedByDataEntryRef = useRef(isScanningLockedByDataEntry);
@@ -125,10 +137,41 @@ export function useBarcodeScanner({
     lastScanTimeRef.current = now;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
+    // Track video fetch/draw time
+    const videoFetchStart = performance.now();
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const videoFetchEnd = performance.now();
+    if (videoFetchTimeRef) {
+      videoFetchTimeRef.current = videoFetchEnd - videoFetchStart;
+    }
+
+    // Track scan FPS (rate of scanBarcode calls that reach detection)
+    if (scanFpsRef) {
+      scanTimestampsRef.current.push(now);
+      // Keep only timestamps from the last second
+      scanTimestampsRef.current = scanTimestampsRef.current.filter((t) => now - t < 1000);
+      scanFpsRef.current = scanTimestampsRef.current.length;
+    }
 
     try {
+      // Track detect() call time
+      const detectStart = performance.now();
       const barcodes = await barcodeDetectorRef.current.detect(canvas);
+      const detectEnd = performance.now();
+      if (detectTimeRef) {
+        detectTimeRef.current = detectEnd - detectStart;
+      }
+
+      // Track detection FPS (rate of actual barcode.detect() calls)
+      if (detectionFpsRef) {
+        detectionTimestampsRef.current.push(Date.now());
+        const detectionNow = Date.now();
+        detectionTimestampsRef.current = detectionTimestampsRef.current.filter(
+          (t) => detectionNow - t < 1000,
+        );
+        detectionFpsRef.current = detectionTimestampsRef.current.length;
+      }
       if (barcodes.length > 0) {
         const code = barcodes[0].rawValue;
         // console.log(

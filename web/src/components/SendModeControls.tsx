@@ -114,6 +114,7 @@ function SendControlButton({ className, children, ...props }: SendControlButtonP
       className={clsx(
         "flex items-center gap-2 rounded-lg bg-white/10 p-3 font-semibold text-white",
         "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
+        "select-none",
         className,
       )}
       aria-label="Log"

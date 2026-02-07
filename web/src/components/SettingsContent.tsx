@@ -53,6 +53,13 @@ export function SettingsContent() {
     });
   };
 
+  const handleShowFpsCounterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      showFpsCounter: e.target.checked,
+    });
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <div className="space-y-4">
@@ -153,6 +160,23 @@ export function SettingsContent() {
             Show Debug Console
           </Label>
         </div>
+
+        {/* Show FPS counter */}
+        <div className="flex items-center gap-2">
+          <input
+            id="showFpsCounter"
+            type="checkbox"
+            checked={settings.showFpsCounter}
+            onChange={handleShowFpsCounterChange}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <Label htmlFor="showFpsCounter" className="cursor-pointer">
+            Show FPS Counter
+          </Label>
+        </div>
+        <p className="text-xs text-gray-500">
+          Display scan rate and detection rate in camera mode (Send Mode only)
+        </p>
       </div>
     </div>
   );

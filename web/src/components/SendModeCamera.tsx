@@ -4,6 +4,7 @@ import { useCamera } from "../hooks/useCamera";
 import { useAppStore } from "@/store/useAppStore";
 import { useShallow } from "zustand/react/shallow";
 import { HoldToScanButton } from "./HoldToScanButton";
+import { FpsCounter } from "./FpsCounter";
 
 interface SendModeCameraProps {
   roomCode: string | null;
@@ -21,9 +22,20 @@ export function SendModeCamera({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const holdToScan = useAppStore(useShallow((state) => state.settings.holdToScan));
+  const { holdToScan, showFpsCounter } = useAppStore(
+    useShallow((state) => ({
+      holdToScan: state.settings.holdToScan,
+      showFpsCounter: state.settings.showFpsCounter,
+    })),
+  );
 
   const isScanningLockedByNotHeldRef = useRef(holdToScan);
+
+  // FPS tracking refs
+  const scanFpsRef = useRef<number>(0);
+  const detectionFpsRef = useRef<number>(0);
+  const detectTimeRef = useRef<number>(0);
+  const videoFetchTimeRef = useRef<number>(0);
 
   const { cameraError } = useCamera({ videoRef, key: roomCode });
 
@@ -34,6 +46,10 @@ export function SendModeCamera({
     isScanningLockedByDataEntry,
     isScanningLockedByNotHeldRef,
     onBarcodeDetected,
+    scanFpsRef: showFpsCounter ? scanFpsRef : undefined,
+    detectionFpsRef: showFpsCounter ? detectionFpsRef : undefined,
+    detectTimeRef: showFpsCounter ? detectTimeRef : undefined,
+    videoFetchTimeRef: showFpsCounter ? videoFetchTimeRef : undefined,
   });
 
   return (
@@ -49,6 +65,15 @@ export function SendModeCamera({
 
       {holdToScan && (
         <HoldToScanButton isScanningLockedByNotHeldRef={isScanningLockedByNotHeldRef} />
+      )}
+
+      {showFpsCounter && (
+        <FpsCounter
+          scanFpsRef={scanFpsRef}
+          detectionFpsRef={detectionFpsRef}
+          detectTimeRef={detectTimeRef}
+          videoFetchTimeRef={videoFetchTimeRef}
+        />
       )}
 
       {cameraError && (
