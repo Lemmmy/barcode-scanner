@@ -92,7 +92,7 @@ export default function LandingPage() {
             View on GitHub
           </a>
           <span className="text-xs text-gray-500">
-            v{import.meta.env.VITE_APP_VERSION || "0.2.1"}
+            {import.meta.env.VITE_APP_VERSION ? "v" + import.meta.env.VITE_APP_VERSION : "dev"}
           </span>
         </div>
       </footer>
