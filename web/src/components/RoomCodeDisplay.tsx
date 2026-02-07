@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Copy, Share2, Edit3, Check } from "lucide-react";
-import { copyToClipboard, shareText } from "../lib/utils";
+import { shareText } from "../lib/utils";
 import ConnectionStatus from "./ConnectionStatus";
+import copyToClipboard from "copy-to-clipboard";
 
 interface RoomCodeDisplayProps {
   code: string | null;
@@ -13,10 +14,10 @@ export default function RoomCodeDisplay({ code, connected, onChangeCode }: RoomC
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     if (!code) return;
     try {
-      await copyToClipboard(code);
+      copyToClipboard(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       setShowMenu(false);

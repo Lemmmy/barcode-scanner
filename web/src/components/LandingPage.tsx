@@ -52,7 +52,7 @@ export default function LandingPage() {
               Receive
             </LandingButton>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-4">
               <LandingButton
                 onClick={handleHistory}
                 icon={<History className="h-6 w-6" />}
@@ -113,6 +113,7 @@ function LandingButton({ onClick, icon, variant, children }: LandingButtonProps)
       onClick={onClick}
       className={cn(
         "flex w-full items-center justify-center gap-3 rounded-lg px-6 py-4 text-lg font-semibold transition-colors",
+        "whitespace-nowrap",
         "min-h-[64px] touch-manipulation",
         variant === "primary" && "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
         variant === "secondary" && "bg-green-600 text-white hover:bg-green-700 active:bg-green-800",

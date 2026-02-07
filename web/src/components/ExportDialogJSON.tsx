@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "./ui/Dialog";
 import { Label } from "./ui/Label";
-import { copyToClipboard as copyTextToClipboard } from "../lib/csv";
+import copyToClipboard from "copy-to-clipboard";
 
 interface JSONExportOptions {
   minify: boolean;
@@ -55,7 +55,7 @@ export function ExportDialogJSON({ open, onOpenChange }: JSONExportDialogProps) 
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } else {
-      void copyTextToClipboard(jsonString);
+      copyToClipboard(jsonString);
     }
 
     onOpenChange(false);

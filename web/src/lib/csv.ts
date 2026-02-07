@@ -111,7 +111,3 @@ export function downloadCSV(content: string, filename: string) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
-export async function copyToClipboard(content: string): Promise<void> {
-  await navigator.clipboard.writeText(content);
-}

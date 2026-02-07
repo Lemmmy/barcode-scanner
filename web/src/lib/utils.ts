@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import copyToClipboard from "copy-to-clipboard";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -17,28 +18,6 @@ export function formatTime(timestamp: number): string {
   });
 }
 
-export function copyToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  textArea.style.position = "fixed";
-  textArea.style.left = "-999999px";
-  document.body.appendChild(textArea);
-  textArea.select();
-
-  try {
-    document.execCommand("copy");
-    return Promise.resolve();
-  } catch (err) {
-    return Promise.reject(err instanceof Error ? err : new Error(String(err)));
-  } finally {
-    document.body.removeChild(textArea);
-  }
-}
-
 export async function shareText(text: string, title?: string): Promise<void> {
   if (navigator.share) {
     await navigator.share({
@@ -46,6 +25,6 @@ export async function shareText(text: string, title?: string): Promise<void> {
       text,
     });
   } else {
-    await copyToClipboard(text);
+    copyToClipboard(text);
   }
 }

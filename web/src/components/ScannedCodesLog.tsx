@@ -12,13 +12,9 @@ import { PaginationControls } from "./PaginationControls";
 import { groupByDate } from "../lib/dateUtils";
 import { cn } from "../lib/utils";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import {
-  generateCSV,
-  downloadCSV,
-  copyToClipboard as copyTextToClipboard,
-  type CSVExportOptions,
-} from "../lib/csv";
+import { generateCSV, downloadCSV, type CSVExportOptions } from "../lib/csv";
 import type { ScannedCode } from "../types";
+import copyToClipboard from "copy-to-clipboard";
 
 interface ScannedCodesLogProps {
   isOpen: boolean;
@@ -87,9 +83,9 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
     return result;
   }, [groupedCodes, startIndex, endIndex]);
 
-  const handleCopy = async (code: string, id: string) => {
+  const handleCopy = (code: string, id: string) => {
     try {
-      await copyTextToClipboard(code);
+      copyToClipboard(code);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (error) {
@@ -180,7 +176,7 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
       const timestamp = new Date().toISOString().split("T")[0];
       downloadCSV(csv, `barcodes-${timestamp}.csv`);
     } else {
-      void copyTextToClipboard(csv);
+      copyToClipboard(csv);
     }
   };
 
