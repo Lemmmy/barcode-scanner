@@ -1,6 +1,6 @@
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import dayjs from "dayjs";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useSocketConnection } from "../hooks/useSocketConnection";
 import { playBeep } from "../lib/audio";
@@ -20,24 +20,27 @@ export default function SendMode() {
   const [isScanning, setIsScanning] = useState(true);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const pendingCodeRef = useRef<string | null>(null);
   const [prePopulatedData, setPrePopulatedData] = useState<Record<string, unknown> | null>(null);
 
   const isDesktop = useMediaQuery("(min-width: 512px)");
 
   const {
-    templates,
-    activeTemplateId,
+    activeTemplate,
     connectionStatus,
     incomingTemplate,
+    existingTemplate,
     setIncomingTemplate,
     scanMode,
     settings,
   } = useAppStore(
     useShallow((state) => ({
-      templates: state.templates,
-      activeTemplateId: state.activeTemplateId,
+      activeTemplate: state.templates.find((t) => t.id === state.activeTemplateId),
       connectionStatus: state.connectionStatus,
       incomingTemplate: state.incomingTemplate,
+      existingTemplate: state.incomingTemplate
+        ? state.templates.find((t) => t.name === state.incomingTemplate!.name)
+        : undefined,
       setIncomingTemplate: state.setIncomingTemplate,
       scanMode: state.scanMode,
       settings: state.settings,
@@ -60,6 +63,45 @@ export default function SendMode() {
     let processedCode = code;
     if (settings.ignoreTildePrefix) {
       processedCode = code.replace(/^~+/, "");
+    }
+
+    function submitScannedCode(code: string) {
+      console.log("Sending barcode to server:", code);
+      socketRef?.emit("scanBarcode", { code });
+
+      if (!isMuted) {
+        playBeep();
+      }
+
+      void addScannedCode({
+        id: generateId(),
+        code,
+        timestamp: Date.now(),
+      });
+
+      // Update last scanned code and trigger flash animation
+      setLastScannedCode(code);
+    }
+
+    function showDataEntryDialog(formData: Record<string, unknown> | null, code: string) {
+      if (!activeTemplate?.fields.length) {
+        console.log("Template set but has no fields, submitting normally");
+        submitScannedCode(code);
+      } else if (pendingCodeRef.current) {
+        console.log(
+          "Skipping detected barcode, already prompting for data entry for:",
+          pendingCodeRef.current,
+        );
+        return;
+      } else {
+        setPrePopulatedData(formData);
+        setPendingCode(code);
+        pendingCodeRef.current = code;
+        if (!isMuted) {
+          playBeep();
+        }
+        setLastScannedCode(code);
+      }
     }
 
     // Check if template is active
@@ -123,23 +165,13 @@ export default function SendMode() {
                   formDataById[field.id] = formDataRaw[field.name];
                 }
               });
-              setPrePopulatedData(formDataById);
-              setPendingCode(processedCode);
-              if (!isMuted) {
-                playBeep();
-              }
-              setLastScannedCode(processedCode);
+              showDataEntryDialog(formDataById, processedCode);
             })
             .catch((error) => {
               console.error("Post-scan script error:", error);
               alert(`Script execution error: ${error.message}`);
               // Still show dialog with default values
-              setPrePopulatedData(null);
-              setPendingCode(processedCode);
-              if (!isMuted) {
-                playBeep();
-              }
-              setLastScannedCode(processedCode);
+              showDataEntryDialog(null, processedCode);
             });
         } catch (error) {
           console.error("Post-scan script compilation error:", error);
@@ -147,40 +179,17 @@ export default function SendMode() {
             `Script compilation error: ${error instanceof Error ? error.message : "Unknown error"}`,
           );
           // Still show dialog with default values
-          setPrePopulatedData(null);
-          setPendingCode(processedCode);
-          if (!isMuted) {
-            playBeep();
-          }
-          setLastScannedCode(processedCode);
+          showDataEntryDialog(null, processedCode);
         }
       } else {
         // No script or JS disabled, show dialog normally
-        setPrePopulatedData(null);
-        setPendingCode(processedCode);
-        if (!isMuted) {
-          playBeep();
-        }
-        setLastScannedCode(processedCode);
+        showDataEntryDialog(null, processedCode);
       }
       return;
     }
 
-    console.log("Sending barcode to server:", processedCode);
-    socketRef.emit("scanBarcode", { code: processedCode });
-
-    if (!isMuted) {
-      playBeep();
-    }
-
-    void addScannedCode({
-      id: generateId(),
-      code: processedCode,
-      timestamp: Date.now(),
-    });
-
-    // Update last scanned code and trigger flash animation
-    setLastScannedCode(processedCode);
+    // No template configured at all, submit normally
+    submitScannedCode(processedCode);
   }, []);
 
   const handleDataEntrySubmit = useCallback(
@@ -278,30 +287,36 @@ export default function SendMode() {
         )}
       </div>
 
-      {pendingCode && activeTemplateId && templates.find((t) => t.id === activeTemplateId) && (
+      {/* Data entry dialog */}
+      {pendingCode && activeTemplate && (
         <DataEntryDialog
-          open={!!pendingCode && !!templates.find((t) => t.id === activeTemplateId)}
+          open={!!pendingCode && !!activeTemplate}
           onOpenChange={(open) => {
             if (!open) {
               setPendingCode(null);
+              pendingCodeRef.current = null;
               setPrePopulatedData(null);
             }
           }}
-          template={templates.find((t) => t.id === activeTemplateId)!}
+          template={activeTemplate}
           scannedCode={pendingCode || ""}
           onSubmit={handleDataEntrySubmit}
           prePopulatedData={prePopulatedData}
         />
       )}
+
+      {/* Template import dialog */}
       {incomingTemplate && (
         <TemplateImportDialog
           open={true}
           onOpenChange={(open) => !open && setIncomingTemplate(null)}
           template={incomingTemplate}
-          existingTemplate={templates.find((t) => t.name === incomingTemplate.name)}
+          existingTemplate={existingTemplate}
           onConfirm={handleImportTemplate}
         />
       )}
+
+      {/* Debug console button */}
       {(import.meta.env.DEV || settings.showDebugConsole) && <DebugConsole />}
     </div>
   );
