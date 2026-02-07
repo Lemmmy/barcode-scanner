@@ -2,7 +2,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { DataEntryTemplate } from "@/types";
 import clsx from "clsx";
 import { Camera, FileText, Keyboard, List, Pause, Play } from "lucide-react";
-import { useCallback, useState } from "react";
+import { ButtonHTMLAttributes, ReactNode, useCallback, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import ScannedCodesLog from "./ScannedCodesLog";
 import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
@@ -37,27 +37,19 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
 
   return (
     <>
-      <div className="flex justify-center gap-3 w-full xs:max-w-[360px] md:max-w-[480px]">
+      <div className="flex justify-center gap-2 w-full xs:max-w-[360px] md:max-w-[480px]">
         {/* Pause Button */}
-        <button
+        <SendControlButton
           onClick={() => setIsScanning(!isScanning)}
-          className={clsx(
-            "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
-            "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
-          )}
           aria-label={isScanning ? "Pause Scanning" : "Resume Scanning"}
           title={isScanning ? "Pause Scanning" : "Resume Scanning"}
         >
           {isScanning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-        </button>
+        </SendControlButton>
 
         {/* Mode Toggle Button */}
-        <button
+        <SendControlButton
           onClick={() => setScanMode(scanMode === "camera" ? "keyboard" : "camera")}
-          className={clsx(
-            "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
-            "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
-          )}
           aria-label={scanMode === "camera" ? "Switch to Keyboard" : "Switch to Camera"}
           title={scanMode === "camera" ? "Switch to Keyboard" : "Switch to Camera"}
         >
@@ -66,17 +58,16 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
           ) : (
             <Camera className="h-5 w-5" />
           )}
-        </button>
+        </SendControlButton>
 
         {/* Template Button */}
-        <button
+        <SendControlButton
           onClick={() => setIsTemplateSelectorOpen(true)}
           className={clsx(
-            "flex flex-1 flex-col items-center rounded-lg px-4 py-3 font-semibold min-w-0",
-            "backdrop-blur-sm transition-colors text-center",
+            "flex-1",
             activeTemplateId
-              ? "bg-blue-500/80 text-white hover:bg-blue-500/90 active:bg-blue-600/90"
-              : "bg-white/10 text-white hover:bg-white/20 active:bg-white/30",
+              ? "!bg-blue-500/80 !text-white active:!bg-blue-600/90 hover:!bg-blue-500/90"
+              : "!bg-white/10 !text-white active:!bg-white/30 hover:!bg-white/20",
           )}
           aria-label={activeTemplateId ? `Template: ${activeTemplateName}` : "No Template"}
           title={activeTemplateId ? `Template: ${activeTemplateName}` : "No Template"}
@@ -91,20 +82,12 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
               <span className="text-center">Templates</span>
             )}
           </span>
-        </button>
+        </SendControlButton>
 
         {/* Log Button */}
-        <button
-          onClick={() => setIsLogOpen(true)}
-          className={clsx(
-            "flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 font-semibold text-white",
-            "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
-          )}
-          aria-label="Log"
-          title="Log"
-        >
+        <SendControlButton onClick={() => setIsLogOpen(true)} aria-label="Log" title="Log">
           <List className="h-5 w-5" />
-        </button>
+        </SendControlButton>
       </div>
 
       <ScannedCodesLog isOpen={isLogOpen} onClose={() => setIsLogOpen(false)} />
@@ -116,5 +99,27 @@ export function SendModeControls({ isScanning, setIsScanning }: SendModeControls
         onShareTemplate={handleShareTemplate}
       />
     </>
+  );
+}
+
+interface SendControlButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  className?: string;
+  children: ReactNode;
+}
+
+function SendControlButton({ className, children, ...props }: SendControlButtonProps) {
+  return (
+    <button
+      {...props}
+      className={clsx(
+        "flex items-center gap-2 rounded-lg bg-white/10 p-3 font-semibold text-white",
+        "backdrop-blur-sm transition-colors hover:bg-white/20 active:bg-white/30",
+        className,
+      )}
+      aria-label="Log"
+      title="Log"
+    >
+      {children}
+    </button>
   );
 }
