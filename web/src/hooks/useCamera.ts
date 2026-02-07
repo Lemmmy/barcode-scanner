@@ -5,8 +5,13 @@ interface UseCameraOptions {
   key?: string | number | null; // Optional key to force reinitialization
 }
 
+interface CameraError {
+  friendlyString: string;
+  error: string;
+}
+
 export function useCamera({ videoRef, key }: UseCameraOptions) {
-  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<CameraError | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastKeyRef = useRef<string | number | null | undefined>(undefined);
 
@@ -71,7 +76,10 @@ export function useCamera({ videoRef, key }: UseCameraOptions) {
       } catch (error) {
         if (mounted) {
           console.error("[useCamera] Camera error:", error);
-          setCameraError("Failed to access camera. Please grant camera permissions.");
+          setCameraError({
+            friendlyString: "Failed to access camera. Please grant camera permissions.",
+            error: String(error),
+          });
         }
       }
     };

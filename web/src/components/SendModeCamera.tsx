@@ -79,7 +79,8 @@ export function SendModeCamera({
       {cameraError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-4">
           <div className="rounded-lg bg-red-500/90 p-6 text-center text-white backdrop-blur-sm">
-            <p className="text-lg font-semibold">{cameraError}</p>
+            <p className="text-lg font-semibold">{cameraError.friendlyString}</p>
+            <p className="text-sm text-red-300">Underlying error: {cameraError.error || "N/A"}</p>
           </div>
         </div>
       )}
