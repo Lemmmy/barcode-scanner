@@ -1,4 +1,4 @@
-import { Scan, Download, Radio } from "lucide-react";
+import { Scan, Download, Radio, History, Settings } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { cn } from "../lib/utils";
 import { useShallow } from "zustand/react/shallow";
@@ -18,6 +18,14 @@ export default function LandingPage() {
     window.open("https://github.com/Lemmmy/barcode-scanner/releases", "_blank");
   };
 
+  const handleHistory = () => {
+    setMode("history");
+  };
+
+  const handleSettings = () => {
+    setMode("settings");
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex flex-1 flex-col items-center justify-center p-6">
@@ -28,25 +36,47 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-4">
-            <Button onClick={handleSend} icon={<Scan className="h-6 w-6" />} variant="primary">
+            <LandingButton
+              onClick={handleSend}
+              icon={<Scan className="h-6 w-6" />}
+              variant="primary"
+            >
               Send
-            </Button>
+            </LandingButton>
 
-            <Button
+            <LandingButton
               onClick={handleReceive}
               icon={<Radio className="h-6 w-6" />}
               variant="secondary"
             >
               Receive
-            </Button>
+            </LandingButton>
 
-            <Button
+            <div className="flex items-center gap-2">
+              <LandingButton
+                onClick={handleHistory}
+                icon={<History className="h-6 w-6" />}
+                variant="outline"
+              >
+                View History
+              </LandingButton>
+
+              <LandingButton
+                onClick={handleSettings}
+                icon={<Settings className="h-6 w-6" />}
+                variant="outline"
+              >
+                Settings
+              </LandingButton>
+            </div>
+
+            <LandingButton
               onClick={handleDownload}
               icon={<Download className="h-6 w-6" />}
               variant="outline"
             >
-              Download Windows App
-            </Button>
+              App Downloads
+            </LandingButton>
           </div>
         </div>
       </main>
@@ -65,14 +95,14 @@ export default function LandingPage() {
   );
 }
 
-interface ButtonProps {
+interface LandingButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
   variant: "primary" | "secondary" | "outline";
   children: React.ReactNode;
 }
 
-function Button({ onClick, icon, variant, children }: ButtonProps) {
+function LandingButton({ onClick, icon, variant, children }: LandingButtonProps) {
   return (
     <button
       onClick={onClick}

@@ -1,10 +1,14 @@
-import { useEffect } from "react";
-import { useAppStore } from "./store/useAppStore";
-import LandingPage from "./components/LandingPage";
-import SendMode from "./components/SendMode";
-import ReceiveMode from "./components/ReceiveMode";
+import { lazy, Suspense, useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { migrateFromLocalStorage } from "./lib/migration";
+import { useAppStore } from "./store/useAppStore";
+import { Loader2 } from "lucide-react";
+
+const LandingPage = lazy(() => import("./components/LandingPage"));
+const SendMode = lazy(() => import("./components/SendMode"));
+const ReceiveMode = lazy(() => import("./components/ReceiveMode"));
+const HistoryMode = lazy(() => import("./components/HistoryMode"));
+const SettingsMode = lazy(() => import("./components/SettingsMode"));
 
 function App() {
   const mode = useAppStore(useShallow((state) => state.mode));
@@ -38,9 +42,21 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {mode === "landing" && <LandingPage />}
-      {mode === "send" && <SendMode />}
-      {mode === "receive" && <ReceiveMode />}
+      <Suspense fallback={<LoadingFallback />}>
+        {mode === "landing" && <LandingPage />}
+        {mode === "send" && <SendMode />}
+        {mode === "receive" && <ReceiveMode />}
+        {mode === "history" && <HistoryMode />}
+        {mode === "settings" && <SettingsMode />}
+      </Suspense>
+    </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
     </div>
   );
 }

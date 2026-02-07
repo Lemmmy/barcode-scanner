@@ -13,6 +13,7 @@ const buttonVariants = cva(
         primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
         secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300",
         ghost: "text-gray-700 hover:bg-gray-100 active:bg-gray-200",
+        danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800",
       },
       size: {
         default: "h-10 gap-2 px-4 text-base [&_svg]:size-4 [&_svg]:-ml-0.5",

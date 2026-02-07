@@ -1,4 +1,4 @@
-export type AppMode = "landing" | "send" | "receive";
+export type AppMode = "landing" | "send" | "receive" | "history" | "settings";
 
 export type ScanMode = "camera" | "keyboard";
 
@@ -60,4 +60,5 @@ export interface AppSettings {
   autoDiscoverRooms: boolean;
   ignoreTildePrefix: boolean;
   disableJavaScriptExecution: boolean;
+  showDebugConsole: boolean;
 }

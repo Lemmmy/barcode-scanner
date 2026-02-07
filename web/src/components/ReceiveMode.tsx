@@ -1,24 +1,21 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { ArrowLeft, Settings as SettingsIcon, FileText } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { useAppStore } from "../store/useAppStore";
+import { FileText, Settings as SettingsIcon } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { useShallow } from "zustand/react/shallow";
 import { createSocket, TypedSocket } from "../lib/socket";
 import { generateId } from "../lib/utils";
+import { useAppStore } from "../store/useAppStore";
+import type { DataEntryTemplate } from "../types";
+import { AppHeader } from "./AppHeader";
+import AutoTypeSettings from "./AutoTypeSettings";
+import { ReceiveModeLanding } from "./ReceiveModeLanding";
 import RoomCodeDisplay from "./RoomCodeDisplay";
 import ScannedCodesLog from "./ScannedCodesLog";
-import AutoTypeSettings from "./AutoTypeSettings";
 import { SettingsFlyout } from "./SettingsFlyout";
-import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
 import { TemplateImportDialog } from "./TemplateImportDialog";
-import { RoomDiscovery } from "./RoomDiscovery";
-import type { DataEntryTemplate } from "../types";
-import { Label } from "./ui/Label";
-import { Input } from "./ui/Input";
-import { Button } from "./ui/Button";
-import { FormError } from "./ui/FormError";
-import { useShallow } from "zustand/react/shallow";
+import { TemplateManagerFlyout } from "./TemplateSelectorFlyout";
 
-interface RoomCodeForm {
+export interface RoomCodeForm {
   roomCode: string;
 }
 
@@ -30,20 +27,14 @@ export default function ReceiveMode() {
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [incomingTemplate, setIncomingTemplate] = useState<DataEntryTemplate | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<RoomCodeForm>({
+  const roomCodeForm = useForm<RoomCodeForm>({
     mode: "onSubmit",
     defaultValues: {
       roomCode: "",
     },
   });
 
-  const roomCode = watch("roomCode");
+  const roomCode = roomCodeForm.watch("roomCode");
 
   const {
     setMode,
@@ -152,17 +143,7 @@ export default function ReceiveMode() {
     setMode("landing");
   };
 
-  const onSubmit = () => {
-    setHasJoined(true);
-  };
-
-  const handleRoomSelect = (code: string) => {
-    // Set the room code using react-hook-form and auto-submit
-    setValue("roomCode", code, { shouldValidate: true });
-    setHasJoined(true);
-  };
-
-  const handleChangeCode = () => {
+  const _handleChangeCode = () => {
     const newCode = prompt("Enter a 4-digit room code:", roomCode);
     if (newCode && /^\d{4}$/.test(newCode)) {
       socketRef.current?.disconnect();
@@ -198,128 +179,80 @@ export default function ReceiveMode() {
     setIncomingTemplate(null);
   }, [incomingTemplate]);
 
-  if (!hasJoined) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <div className="flex items-center border-b border-gray-200 bg-white p-4">
-          <button
-            onClick={handleBack}
-            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </button>
-          <h1 className="ml-4 text-xl font-semibold text-gray-900">Receive Mode</h1>
-        </div>
-
-        <div className="flex flex-1 items-center justify-center p-6">
-          <form
-            onSubmit={(e) => void handleSubmit(onSubmit)(e)}
-            className="w-full max-w-sm space-y-6"
-          >
-            <div>
-              <Label htmlFor="roomCode">Enter Room Code</Label>
-              <Input
-                type="text"
-                id="roomCode"
-                placeholder="0000"
-                maxLength={4}
-                variant="code"
-                className="mt-2"
-                {...register("roomCode", {
-                  required: "Room code is required",
-                  pattern: {
-                    value: /^\d{4}$/,
-                    message: "Room code must be exactly 4 digits",
-                  },
-                })}
-              />
-              <FormError message={errors.roomCode?.message} className="mt-2" />
-            </div>
-
-            <Button type="submit" size="large" fullWidth>
-              Join Room
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-gray-50 px-2 text-gray-500">or</span>
-              </div>
-            </div>
-
-            <RoomDiscovery
-              onRoomSelect={handleRoomSelect}
-              autoDiscover={settings.autoDiscoverRooms}
-            />
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white p-4">
-        {!isElectron ? (
-          <button
-            onClick={handleBack}
-            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
-            aria-label="Back to landing"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        ) : (
-          <div className="w-10" />
-        )}
+      <AppHeader
+        title="Receive Mode"
+        onBack={handleBack}
+        extra={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center flex-1">
+              {hasJoined && (
+                <div className="flex items-center flex-1">
+                  <RoomCodeDisplay
+                    code={connectionStatus.roomCode}
+                    connected={connectionStatus.connected}
+                    onChangeCode={_handleChangeCode}
+                  />
+                </div>
+              )}
+            </div>
 
-        <div className="flex items-center gap-3">
-          <RoomCodeDisplay
-            code={roomCode}
-            connected={connectionStatus.connected}
-            onChangeCode={handleChangeCode}
-          />
-        </div>
+            <div className="flex items-center gap-2">
+              {/* Auto-type settings */}
+              {isElectron && <AutoTypeSettings />}
 
-        <div className="flex items-center gap-2">
-          {isElectron && <AutoTypeSettings />}
-          <button
-            onClick={() => setIsTemplateManagerOpen(true)}
-            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
-            title="Templates"
-          >
-            <FileText className="h-6 w-6" />
-          </button>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
-            title="Settings"
-          >
-            <SettingsIcon className="h-6 w-6" />
-          </button>
-        </div>
-      </div>
+              {/* Templates */}
+              <button
+                onClick={() => setIsTemplateManagerOpen(true)}
+                className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
+                aria-label="Templates"
+              >
+                <FileText className="h-5 w-5" />
+              </button>
 
-      <div className="flex-1 overflow-hidden">
-        <ScannedCodesLog isOpen={true} onClose={() => {}} fullscreen />
-      </div>
-
-      <SettingsFlyout isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <TemplateManagerFlyout
-        isOpen={isTemplateManagerOpen}
-        onClose={() => setIsTemplateManagerOpen(false)}
-        mode="receive"
-        onShareTemplate={handleShareTemplate}
+              {/* Settings */}
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200"
+                aria-label="Settings"
+              >
+                <SettingsIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        }
       />
-      {incomingTemplate && (
-        <TemplateImportDialog
-          open={true}
-          onOpenChange={(open) => !open && setIncomingTemplate(null)}
-          template={incomingTemplate}
-          existingTemplate={templates.find((t) => t.name === incomingTemplate.name)}
-          onConfirm={handleImportTemplate}
-        />
+
+      {!hasJoined ? (
+        // Room code landing page
+        <FormProvider {...roomCodeForm}>
+          <ReceiveModeLanding setHasJoined={setHasJoined} />
+        </FormProvider>
+      ) : (
+        <>
+          {/* Receive mode proper */}
+          <div className="flex-1 overflow-hidden">
+            <ScannedCodesLog isOpen={true} onClose={() => {}} fullscreen />
+          </div>
+
+          <SettingsFlyout isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          <TemplateManagerFlyout
+            isOpen={isTemplateManagerOpen}
+            onClose={() => setIsTemplateManagerOpen(false)}
+            mode="receive"
+            onShareTemplate={handleShareTemplate}
+          />
+          {incomingTemplate && (
+            <TemplateImportDialog
+              open={true}
+              onOpenChange={(open) => !open && setIncomingTemplate(null)}
+              template={incomingTemplate}
+              existingTemplate={templates.find((t) => t.name === incomingTemplate.name)}
+              onConfirm={handleImportTemplate}
+            />
+          )}
+        </>
       )}
     </div>
   );

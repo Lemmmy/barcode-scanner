@@ -32,7 +32,7 @@ interface ExportDialogProps {
   onExport: (options: ExportFormData, action: "download" | "copy") => void;
 }
 
-export function ExportDialog({ open, onOpenChange, onExport }: ExportDialogProps) {
+export function ExportDialogCSV({ open, onOpenChange, onExport }: ExportDialogProps) {
   const { exportPreferences, setExportPreferences } = useAppStore(
     useShallow((state) => ({
       exportPreferences: state.exportPreferences,

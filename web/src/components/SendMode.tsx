@@ -31,6 +31,7 @@ export default function SendMode() {
     incomingTemplate,
     setIncomingTemplate,
     scanMode,
+    settings,
   } = useAppStore(
     useShallow((state) => ({
       templates: state.templates,
@@ -39,6 +40,7 @@ export default function SendMode() {
       incomingTemplate: state.incomingTemplate,
       setIncomingTemplate: state.setIncomingTemplate,
       scanMode: state.scanMode,
+      settings: state.settings,
     })),
   );
 
@@ -300,7 +302,7 @@ export default function SendMode() {
           onConfirm={handleImportTemplate}
         />
       )}
-      {import.meta.env.DEV && <DebugConsole />}
+      {(import.meta.env.DEV || settings.showDebugConsole) && <DebugConsole />}
     </div>
   );
 }

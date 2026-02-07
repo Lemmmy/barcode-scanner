@@ -55,6 +55,10 @@ export const scannedCodesService = {
     await db.scannedCodes.delete(id);
   },
 
+  async bulkDelete(ids: string[]): Promise<void> {
+    await db.scannedCodes.bulkDelete(ids);
+  },
+
   async clear(): Promise<void> {
     await db.scannedCodes.clear();
   },

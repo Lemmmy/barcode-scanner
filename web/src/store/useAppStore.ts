@@ -34,6 +34,7 @@ interface AppState {
   addScannedCode: (code: Omit<ScannedCode, "count" | "firstScannedAt">) => Promise<void>;
   loadScannedCodes: () => Promise<void>;
   clearScannedCodes: () => Promise<void>;
+  deleteScannedCodes: (ids: string[]) => Promise<void>;
   toggleMute: () => void;
   setSocketRef: (socket: TypedSocket | null) => void;
   setAutoTypeSettings: (settings: AutoTypeSettings) => void;
@@ -69,6 +70,7 @@ export const useAppStore = create<AppState>()(
           autoDiscoverRooms: true,
           ignoreTildePrefix: false,
           disableJavaScriptExecution: false,
+          showDebugConsole: false,
         },
         exportPreferences: {
           includeHeader: true,
@@ -99,6 +101,12 @@ export const useAppStore = create<AppState>()(
         clearScannedCodes: async () => {
           await scannedCodesService.clear();
           set({ scannedCodes: [] });
+        },
+
+        deleteScannedCodes: async (ids) => {
+          await scannedCodesService.bulkDelete(ids);
+          const codes = await scannedCodesService.getAll();
+          set({ scannedCodes: codes });
         },
 
         toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),

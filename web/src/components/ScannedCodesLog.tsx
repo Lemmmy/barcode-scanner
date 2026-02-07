@@ -1,4 +1,5 @@
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useShallow } from "zustand/react/shallow";
@@ -28,10 +29,11 @@ interface ScannedCodesLogProps {
 const ITEMS_PER_PAGE = 50;
 
 export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: ScannedCodesLogProps) {
-  const { scannedCodes, clearScannedCodes } = useAppStore(
+  const { scannedCodes, clearScannedCodes, deleteScannedCodes } = useAppStore(
     useShallow((state) => ({
       scannedCodes: state.scannedCodes,
       clearScannedCodes: state.clearScannedCodes,
+      deleteScannedCodes: state.deleteScannedCodes,
     })),
   );
 
@@ -40,6 +42,7 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(0);
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 512px)");
 
   const groupedCodes = useMemo(() => {
@@ -188,6 +191,13 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
     setCollapsedDates(new Set());
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    await deleteScannedCodes(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setShowDeleteDialog(false);
+  };
+
   const allSelected = scannedCodes.length > 0 && selectedIds.size === scannedCodes.length;
   const someSelected = selectedIds.size > 0 && selectedIds.size < scannedCodes.length;
 
@@ -206,7 +216,17 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
           <h2 className="text-xl font-semibold text-gray-900">Scanned Codes</h2>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton onExport={handleExport} disabled={scannedCodes.length === 0} />
+          {selectedIds.size > 0 && (
+            <Button variant="danger" size="small" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4" />
+              Delete {selectedIds.size}
+            </Button>
+          )}
+          <ExportButton
+            onExport={handleExport}
+            disabled={scannedCodes.length === 0}
+            selectedCount={selectedIds.size}
+          />
           <ClearHistoryButton onClear={handleClearHistory} disabled={scannedCodes.length === 0} />
           {!fullscreen && (
             <Button variant="ghost" size="small" onClick={onClose}>
@@ -257,7 +277,19 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
   );
 
   if (fullscreen) {
-    return <div className="flex h-full flex-col bg-white">{content}</div>;
+    return (
+      <div className="flex h-full flex-col bg-white">
+        {content}
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title="Delete Selected Codes"
+          description={`Are you sure you want to delete ${selectedIds.size} selected code${selectedIds.size === 1 ? "" : "s"}? This action cannot be undone.`}
+          confirmLabel={`Delete ${selectedIds.size}`}
+          onConfirm={() => void handleDeleteSelected()}
+        />
+      </div>
+    );
   }
 
   return (
@@ -272,12 +304,20 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
 
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 flex max-h-[70vh] flex-col bg-white transition-transform",
+          "fixed bottom-0 left-0 right-0 z-50 flex max-h-[80vh] flex-col bg-white transition-transform",
           "rounded-t-2xl shadow-2xl",
           isOpen ? "translate-y-0" : "translate-y-full",
         )}
       >
         {content}
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title="Delete Selected Codes"
+          description={`Are you sure you want to delete ${selectedIds.size} selected code${selectedIds.size === 1 ? "" : "s"}? This action cannot be undone.`}
+          confirmLabel={`Delete ${selectedIds.size}`}
+          onConfirm={() => void handleDeleteSelected()}
+        />
       </div>
     </>
   );
