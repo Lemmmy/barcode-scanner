@@ -12,7 +12,7 @@ interface DateGroupProps {
   selectedIds: Set<string>;
   onToggleCollapse: (date: string) => void;
   onSelectDate: (date: string, codes: ScannedCode[], checked: boolean) => void;
-  onSelectCode: (id: string, checked: boolean) => void;
+  onSelectCode: (id: string, checked: boolean, event?: React.MouseEvent) => void;
   onCopy: (code: string, id: string) => void;
 }
 

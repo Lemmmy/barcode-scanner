@@ -39,6 +39,7 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(0);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const isDesktop = useMediaQuery("(min-width: 512px)");
 
   const groupedCodes = useMemo(() => {
@@ -113,14 +114,47 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
     setSelectedIds(newSelected);
   };
 
-  const handleSelectCode = (id: string, checked: boolean) => {
+  const handleSelectCode = (id: string, checked: boolean, event?: React.MouseEvent) => {
     const newSelected = new Set(selectedIds);
-    if (checked) {
-      newSelected.add(id);
-    } else {
-      newSelected.delete(id);
+
+    // Shift+click: range selection
+    if (event?.shiftKey && lastSelectedId) {
+      const allIds = scannedCodes.map((c) => c.id);
+      const lastIndex = allIds.indexOf(lastSelectedId);
+      const currentIndex = allIds.indexOf(id);
+
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+
+        for (let i = start; i <= end; i++) {
+          if (checked) {
+            newSelected.add(allIds[i]);
+          } else {
+            newSelected.delete(allIds[i]);
+          }
+        }
+      }
     }
+    // Ctrl+click or Cmd+click: toggle without affecting others
+    else if (event?.ctrlKey || event?.metaKey) {
+      if (newSelected.has(id)) {
+        newSelected.delete(id);
+      } else {
+        newSelected.add(id);
+      }
+    }
+    // Normal click: single selection
+    else {
+      if (checked) {
+        newSelected.add(id);
+      } else {
+        newSelected.delete(id);
+      }
+    }
+
     setSelectedIds(newSelected);
+    setLastSelectedId(id);
   };
 
   const toggleDateCollapse = (date: string) => {
@@ -134,8 +168,10 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
   };
 
   const handleExport = (options: CSVExportOptions, action: "download" | "copy") => {
-    const selectedCodes = scannedCodes.filter((c) => selectedIds.has(c.id));
-    const csv = generateCSV(selectedCodes, options);
+    // If nothing selected, export all codes
+    const codesToExport =
+      selectedIds.size > 0 ? scannedCodes.filter((c) => selectedIds.has(c.id)) : scannedCodes;
+    const csv = generateCSV(codesToExport, options);
 
     if (action === "download") {
       const timestamp = new Date().toISOString().split("T")[0];
@@ -170,7 +206,7 @@ export default function ScannedCodesLog({ isOpen, onClose, fullscreen }: Scanned
           <h2 className="text-xl font-semibold text-gray-900">Scanned Codes</h2>
         </div>
         <div className="flex items-center gap-2">
-          {selectedIds.size > 0 && <ExportButton onExport={handleExport} />}
+          <ExportButton onExport={handleExport} disabled={scannedCodes.length === 0} />
           <ClearHistoryButton onClear={handleClearHistory} disabled={scannedCodes.length === 0} />
           {!fullscreen && (
             <Button variant="ghost" size="small" onClick={onClose}>

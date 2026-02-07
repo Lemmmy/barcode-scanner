@@ -15,7 +15,7 @@ interface ScannedCodeItemProps {
   isSelected: boolean;
   isDesktop: boolean;
   copiedId: string | null;
-  onSelect: (id: string, checked: boolean) => void;
+  onSelect: (id: string, checked: boolean, event?: React.MouseEvent) => void;
   onCopy: (code: string, id: string) => void;
 }
 
@@ -29,10 +29,17 @@ export function ScannedCodeItem({
 }: ScannedCodeItemProps) {
   return (
     <div className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-      <Checkbox
-        checked={isSelected}
-        onCheckedChange={(checked) => onSelect(item.id, checked === true)}
-      />
+      <div
+        onClick={(e) => {
+          // Capture the click event for shift/ctrl handling
+          onSelect(item.id, !isSelected, e);
+        }}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(item.id, checked === true)}
+        />
+      </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <code className="font-mono text-sm">{item.code}</code>
