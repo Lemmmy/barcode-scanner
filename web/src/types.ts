@@ -61,4 +61,5 @@ export interface AppSettings {
   ignoreTildePrefix: boolean;
   disableJavaScriptExecution: boolean;
   showDebugConsole: boolean;
+  holdToScan: boolean;
 }

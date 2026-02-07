@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from "react";
 import { BarcodeDetector } from "barcode-detector";
+import { useCallback, useEffect, useRef } from "react";
 
-export const SCAN_INTERVAL_MS = 200;
+export const SCAN_INTERVAL_MS = 250;
 export const SCAN_COOLDOWN_MS = 5000;
 
 interface UseBarcodeScannerOptions {

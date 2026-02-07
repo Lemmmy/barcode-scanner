@@ -46,9 +46,17 @@ export function SettingsContent() {
     });
   };
 
+  const handleHoldToScanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      holdToScan: e.target.checked,
+    });
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <div className="space-y-4">
+        {/* Relay server URL */}
         <div>
           <Label htmlFor="settingsRelayServerUrl">Relay Server URL</Label>
           <Input
@@ -64,6 +72,7 @@ export function SettingsContent() {
           </p>
         </div>
 
+        {/* Auto-discover nearby rooms */}
         <div className="flex items-center gap-2">
           <input
             id="autoDiscoverRooms"
@@ -80,6 +89,7 @@ export function SettingsContent() {
           Automatically refresh the list of nearby rooms every 10 seconds
         </p>
 
+        {/* Ignore tilde prefix */}
         <div className="flex items-center gap-2">
           <input
             id="ignoreTildePrefix"
@@ -96,6 +106,24 @@ export function SettingsContent() {
           Strip leading tilde characters from scanned barcodes (Send Mode only)
         </p>
 
+        {/* Hold to scan */}
+        <div className="flex items-center gap-2">
+          <input
+            id="holdToScan"
+            type="checkbox"
+            checked={settings.holdToScan}
+            onChange={handleHoldToScanChange}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <Label htmlFor="holdToScan" className="cursor-pointer">
+            Hold to Scan
+          </Label>
+        </div>
+        <p className="text-xs text-gray-500">
+          Require holding a button to scan in camera mode (Send Mode only)
+        </p>
+
+        {/* Disable JavaScript execution */}
         <div className="flex items-center gap-2">
           <input
             id="disableJavaScriptExecution"
@@ -112,6 +140,7 @@ export function SettingsContent() {
           Prevent all post-scan scripts from running (Send Mode only)
         </p>
 
+        {/* Show debug console */}
         <div className="flex items-center gap-2">
           <input
             id="showDebugConsole"

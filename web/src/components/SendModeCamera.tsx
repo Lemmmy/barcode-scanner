@@ -1,6 +1,9 @@
 import { useRef } from "react";
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 import { useCamera } from "../hooks/useCamera";
+import { useAppStore } from "@/store/useAppStore";
+import { useShallow } from "zustand/react/shallow";
+import { HoldToScanButton } from "./HoldToScanButton";
 
 interface SendModeCameraProps {
   roomCode: string | null;
@@ -18,7 +21,9 @@ export function SendModeCamera({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const isScanningLockedByNotHeldRef = useRef(false);
+  const holdToScan = useAppStore(useShallow((state) => state.settings.holdToScan));
+
+  const isScanningLockedByNotHeldRef = useRef(holdToScan);
 
   const { cameraError } = useCamera({ videoRef, key: roomCode });
 
@@ -41,6 +46,10 @@ export function SendModeCamera({
         className="absolute inset-0 h-full w-full object-cover"
       />
       <canvas ref={canvasRef} className="hidden" />
+
+      {holdToScan && (
+        <HoldToScanButton isScanningLockedByNotHeldRef={isScanningLockedByNotHeldRef} />
+      )}
 
       {cameraError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-4">
